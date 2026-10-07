@@ -38,6 +38,16 @@ const ogImageUrl = new URL(ogImage, site).href;
     <meta name="twitter:title" content={title} />
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImageUrl} />
+    <script is:inline>
+      // Turn scroll animations on before first paint, unless the visitor prefers reduced motion.
+      // If the reveal script never reports ready, show everything rather than leave it hidden.
+      if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        document.documentElement.classList.add('reveal-on');
+        setTimeout(function () {
+          if (!window.__revealReady) document.documentElement.classList.remove('reveal-on');
+        }, 3000);
+      }
+    </script>
   </head>
   <body>
     <slot />

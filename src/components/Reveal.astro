@@ -1,0 +1,24 @@
+<script>
+  // Marks each [data-reveal] element with .is-in the first time it scrolls into view.
+  // The start states only apply under html.reveal-on (set in Base.astro), so without
+  // this script, or under reduced motion, everything is simply visible.
+  declare global {
+    interface Window { __revealReady?: boolean }
+  }
+
+  window.__revealReady = true;
+
+  if (document.documentElement.classList.contains('reveal-on')) {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (!e.isIntersecting) continue;
+          e.target.classList.add('is-in');
+          observer.unobserve(e.target);
+        }
+      },
+      { rootMargin: '0px 0px -8% 0px' },
+    );
+    document.querySelectorAll('[data-reveal]').forEach((el) => observer.observe(el));
+  }
+</script>

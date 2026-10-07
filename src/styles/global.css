@@ -92,6 +92,43 @@ a { color: inherit; }
 
 .muted { color: var(--muted); }
 
+/* ---------- scroll reveal (only when html.reveal-on; see Base.astro) ---------- */
+[data-reveal] { --i: 0; }
+:is(ul, .grid) > [data-reveal]:nth-child(2) { --i: 1; }
+:is(ul, .grid) > [data-reveal]:nth-child(3) { --i: 2; }
+:is(ul, .grid) > [data-reveal]:nth-child(4) { --i: 3; }
+:is(ul, .grid) > [data-reveal]:nth-child(5) { --i: 4; }
+:is(ul, .grid) > [data-reveal]:nth-child(6) { --i: 5; }
+:is(ul, .grid) > [data-reveal]:nth-child(7) { --i: 6; }
+:is(ul, .grid) > [data-reveal]:nth-child(n + 8) { --i: 7; }
+
+.reveal-on [data-reveal] { opacity: 0; }
+.reveal-on [data-reveal].is-in {
+  opacity: 1;
+  /* backwards, not both: once landed, hover transforms work again */
+  animation: .55s cubic-bezier(.34, 1.56, .64, 1) calc(var(--i) * 70ms) backwards;
+}
+.reveal-on [data-reveal='drop'].is-in { animation-name: reveal-drop; }
+.reveal-on [data-reveal='pop'].is-in { animation-name: reveal-pop; animation-duration: .45s; }
+.reveal-on [data-reveal='spin'].is-in { animation-name: reveal-spin; animation-duration: .7s; }
+
+@keyframes reveal-drop {
+  from { opacity: 0; transform: translateY(-16px) rotate(-1.5deg); box-shadow: 0 0 0 var(--ink); }
+  to { opacity: 1; transform: none; box-shadow: var(--shadow); }
+}
+@keyframes reveal-pop {
+  from { opacity: 0; transform: scale(.6); }
+  to { opacity: 1; transform: none; }
+}
+@keyframes reveal-spin {
+  from { opacity: 0; transform: rotate(-180deg) scale(.5); }
+  to { opacity: 1; transform: none; }
+}
+
+@media print {
+  .reveal-on [data-reveal] { opacity: 1; animation: none; }
+}
+
 .sr-only {
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;

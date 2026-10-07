@@ -16,7 +16,7 @@ const posterImage = typeof video.poster === 'string' ? undefined : video.poster;
 const platform = { youtube: 'YouTube', tiktok: 'TikTok', link: 'link', file: '' }[video.kind];
 ---
 
-<article class="video card">
+<article class="video card" data-reveal="drop">
   <div class="video__media">
     {video.kind === 'file' ? (
       <video controls preload="none" playsinline poster={posterSrc} aria-label={video.title}>

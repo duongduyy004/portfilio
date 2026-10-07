@@ -8,6 +8,7 @@ import HighlightCard from '../components/HighlightCard.astro';
 import Lightbox from '../components/Lightbox.astro';
 import PostCard from '../components/PostCard.astro';
 import ProfileHeader from '../components/ProfileHeader.astro';
+import Reveal from '../components/Reveal.astro';
 import RoleCard from '../components/RoleCard.astro';
 import Section from '../components/Section.astro';
 import TabBar from '../components/TabBar.astro';
@@ -89,6 +90,7 @@ const section = (id: (typeof SECTIONS)[number]['id']) => ({
   </main>
 
   <Lightbox />
+  <Reveal />
 </Base>
 
 <style>

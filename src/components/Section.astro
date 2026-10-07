@@ -11,7 +11,7 @@ const headingId = `${id}-heading`;
 
 <section id={id} aria-labelledby={headingId} class="section container">
   <header class="section__head">
-    <span class="section__icon" aria-hidden="true"><span>{icon}</span></span>
+    <span class="section__icon" aria-hidden="true" data-reveal="spin"><span>{icon}</span></span>
     <h2 id={headingId}>{title}</h2>
   </header>
   <slot />

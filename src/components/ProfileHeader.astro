@@ -18,7 +18,7 @@ const chipColours = ['chip--yellow', 'chip--mint', 'chip--pink'];
 ---
 
 <header class="profile container">
-  <div class="profile__card card">
+  <div class="profile__card card" data-reveal="drop">
     <div class="profile__avatar">
       <Image src={avatar.src} alt={avatar.alt} widths={[168, 336]} sizes="168px" loading="eager" fetchpriority="high" />
     </div>
@@ -27,7 +27,7 @@ const chipColours = ['chip--yellow', 'chip--mint', 'chip--pink'];
       <p class="profile__headline">{headline}</p>
       <p class="profile__bio">{bio}</p>
       <ul class="profile__chips">
-        {skills.map((s, i) => <li class:list={['chip', chipColours[i % chipColours.length]]}>{s}</li>)}
+        {skills.map((s, i) => <li class:list={["chip", chipColours[i % chipColours.length]]} data-reveal="pop">{s}</li>)}
       </ul>
       <div class="profile__actions">
         <a class="btn btn--primary" href="#contact">Contact me</a>

@@ -32,12 +32,15 @@ const { stat, size = 'md' } = Astro.props;
   const DURATION = 1200;
   const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  // when cards drop in on scroll, start counting as the card lands
+  const LAND_DELAY = document.documentElement.classList.contains('reveal-on') ? 250 : 0;
+
   function animate(el: HTMLElement) {
     const parsed = parseStat(el.dataset.count ?? '');
     if (!parsed) return;
-    const start = performance.now();
+    const start = performance.now() + LAND_DELAY;
     const tick = (now: number) => {
-      const t = Math.min(1, (now - start) / DURATION);
+      const t = Math.max(0, Math.min(1, (now - start) / DURATION));
       const eased = 1 - Math.pow(1 - t, 3);
       el.textContent = t < 1 ? formatStat(parsed, parsed.number * eased) : el.dataset.count!;
       if (t < 1) requestAnimationFrame(tick);

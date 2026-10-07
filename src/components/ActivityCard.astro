@@ -9,7 +9,7 @@ interface Props {
 const { activity } = Astro.props;
 ---
 
-<article class="activity card">
+<article class="activity card" data-reveal="drop">
   {activity.photo && (
     <Image src={activity.photo.src} alt={activity.photo.alt} widths={[360, 720]} sizes="(min-width: 960px) 340px, (min-width: 640px) 45vw, 90vw" />
   )}
