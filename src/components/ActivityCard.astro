@@ -1,0 +1,38 @@
+---
+import { Image } from 'astro:assets';
+import type { Activity } from '../data/types';
+
+interface Props {
+  activity: Activity;
+}
+
+const { activity } = Astro.props;
+---
+
+<article class="activity card">
+  {activity.photo && (
+    <Image src={activity.photo.src} alt={activity.photo.alt} widths={[360, 720]} sizes="(min-width: 960px) 340px, (min-width: 640px) 45vw, 90vw" />
+  )}
+  <div class="activity__body">
+    <span class="activity__role">{activity.role}</span>
+    <h3>{activity.title}</h3>
+    <p>{activity.text}</p>
+  </div>
+</article>
+
+<style>
+  .activity { display: flex; flex-direction: column; }
+  .activity img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-bottom: var(--border); }
+  .activity__body { padding: 14px 16px 18px; display: grid; gap: 6px; }
+  .activity__role {
+    justify-self: start;
+    font-size: 12px;
+    font-weight: 700;
+    background: var(--pink);
+    border: var(--border);
+    border-radius: 999px;
+    padding: 1px 10px;
+  }
+  h3 { font-size: 18px; }
+  p { font-size: 15px; }
+</style>

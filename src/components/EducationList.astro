@@ -1,0 +1,42 @@
+---
+import type { Education } from '../data/types';
+
+interface Props {
+  items: Education[];
+}
+
+const { items } = Astro.props;
+---
+
+<article class="education card">
+  <h3>🎓 Education</h3>
+  <ul>
+    {items.map((e) => (
+      <li>
+        <span class="education__years">{e.years}</span>
+        <div>
+          <p class="education__school">{e.school}</p>
+          <p class="education__detail">{e.detail}</p>
+        </div>
+      </li>
+    ))}
+  </ul>
+</article>
+
+<style>
+  .education { padding: 18px 20px; display: grid; gap: 12px; align-content: start; }
+  h3 { font-size: 18px; }
+  ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 14px; }
+  li { display: grid; grid-template-columns: minmax(0, 1fr); gap: 4px; }
+  .education__years {
+    justify-self: start;
+    font-size: 13px;
+    font-weight: 700;
+    background: var(--yellow);
+    border: var(--border);
+    border-radius: 999px;
+    padding: 1px 10px;
+  }
+  .education__school { font-weight: 700; }
+  .education__detail { font-size: 14px; color: var(--muted); }
+</style>
