@@ -16,6 +16,14 @@ test('tab highlight', async ({ page }) => {
   await expect(tab).toHaveAttribute('aria-current', 'true');
 });
 
+test('contact tab becomes current at the bottom of the page', async ({ page }) => {
+  await page.goto('/');
+  const tab = page.locator('nav[aria-label="Sections"] a[href="#contact"]');
+  await tab.click();
+  await expect(tab).toHaveAttribute('aria-current', 'true');
+  await expect(page.locator('nav[aria-label="Sections"] [aria-current="true"]')).toHaveCount(1);
+});
+
 for (const width of [320, 390, 1440]) {
   test(`no horizontal scroll at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });

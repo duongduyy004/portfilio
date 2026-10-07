@@ -43,6 +43,11 @@ describe('profile content', () => {
     expect(metricValues('meraces')).toEqual(expect.arrayContaining(['128,552', '100+', '5']));
   });
 
+  it('pickleball caption claims only what the deck states (supported, hosted as MC)', () => {
+    const pickleball = profile.events.find((e) => e.title.startsWith('Pickleball'))!;
+    expect(pickleball.caption).toBe('Internal sports tournament: supported the organisation and hosted as MC.');
+  });
+
   it('contact details', () => {
     expect(profile.contact.email).toBe('thuyanhphi.work@gmail.com');
     expect(profile.contact.phone).toBe('083-883-1319');

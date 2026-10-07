@@ -185,7 +185,7 @@ export const profile: Profile = {
     {
       title: 'Pickleball Season 1',
       org: 'MOR Software',
-      caption: 'Internal tournament, organised and hosted.',
+      caption: 'Internal sports tournament: supported the organisation and hosted as MC.',
       photo: { src: morPickleball, alt: 'Players posing at the MOR Pickleball Season 1 tournament' },
     },
     {
