@@ -1,0 +1,75 @@
+---
+import { getImage, Image } from 'astro:assets';
+import type { EventItem } from '../data/types';
+
+interface Props {
+  events: EventItem[];
+}
+
+const { events } = Astro.props;
+const items = await Promise.all(
+  events.map(async (e) => ({
+    ...e,
+    full: (await getImage({ src: e.photo.src, width: Math.min(1600, e.photo.src.width) })).src,
+  })),
+);
+---
+
+<ul class="events">
+  {items.map((e) => (
+    <li class="event card">
+      <button
+        type="button"
+        class="event__button"
+        data-lightbox
+        data-full={e.full}
+        data-alt={e.photo.alt}
+        data-caption={`${e.title} · ${e.org} — ${e.caption}`}
+      >
+        <Image src={e.photo.src} alt={e.photo.alt} widths={[360, 720]} sizes="(min-width: 960px) 340px, (min-width: 640px) 45vw, 90vw" />
+        <span class="sr-only">Open larger photo</span>
+      </button>
+      <div class="event__body">
+        <span class="event__org">{e.org}</span>
+        <h3>{e.title}</h3>
+        <p>{e.caption}</p>
+      </div>
+    </li>
+  ))}
+</ul>
+
+<style>
+  .events {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+  @media (min-width: 640px) { .events { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  @media (min-width: 960px) { .events { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+
+  .event { display: flex; flex-direction: column; }
+  .event__button {
+    display: block;
+    padding: 0;
+    border: 0;
+    border-bottom: var(--border);
+    background: none;
+    cursor: zoom-in;
+  }
+  .event__button img { width: 100%; aspect-ratio: 4 / 3; object-fit: cover; }
+  .event__body { padding: 12px 16px 16px; display: grid; gap: 4px; }
+  .event__org {
+    justify-self: start;
+    font-size: 12px;
+    font-weight: 700;
+    background: var(--mint);
+    border: var(--border);
+    border-radius: 999px;
+    padding: 1px 10px;
+  }
+  h3 { font-size: 18px; }
+  p { font-size: 14px; color: var(--muted); }
+</style>
