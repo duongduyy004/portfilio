@@ -28,7 +28,7 @@ const linkProps = link.href
     {post.image ? (
       <Image src={post.image.src} alt={post.image.alt} widths={[320, 640]} sizes="(min-width: 960px) 260px, (min-width: 640px) 45vw, 90vw" />
     ) : (
-      <span class="post__quote" aria-hidden="true">“{post.title}”</span>
+      <span class="post__big" aria-hidden="true">{post.views}<small>views</small></span>
     )}
     {rank && <span class="post__rank">#{rank}</span>}
     <span class="post__views">▶ {post.views}</span>
@@ -57,6 +57,9 @@ const linkProps = link.href
     place-items: center;
     padding: 18px;
   }
+  @media (max-width: 639px) {
+    .post__media { aspect-ratio: 16 / 9; }
+  }
   .post__media img {
     position: absolute;
     inset: 0;
@@ -68,12 +71,14 @@ const linkProps = link.href
   .tone-mint { background: var(--mint); }
   .tone-pink { background: var(--pink); }
   .tone-lilac { background: #CBBEFF; }
-  .post__quote {
-    font-size: 22px;
+  .post__big {
+    display: grid;
+    justify-items: center;
+    font-size: clamp(40px, 9vw, 52px);
     font-weight: 700;
-    line-height: 1.2;
-    text-align: center;
+    line-height: 1;
   }
+  .post__big small { font-size: 15px; font-weight: 600; margin-top: 4px; }
   .post__rank,
   .post__views {
     position: absolute;

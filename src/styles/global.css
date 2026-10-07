@@ -38,6 +38,7 @@ body {
 }
 
 img, video, iframe { max-width: 100%; display: block; }
+img { height: auto; }
 h1, h2, h3 { line-height: 1.15; margin: 0; }
 p { margin: 0; }
 a { color: inherit; }

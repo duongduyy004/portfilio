@@ -1,7 +1,111 @@
 ---
+import { Image } from 'astro:assets';
+import ActivityCard from '../components/ActivityCard.astro';
+import ContactCard from '../components/ContactCard.astro';
+import EducationList from '../components/EducationList.astro';
+import EventGrid from '../components/EventGrid.astro';
+import HighlightCard from '../components/HighlightCard.astro';
+import Lightbox from '../components/Lightbox.astro';
+import PostCard from '../components/PostCard.astro';
+import ProfileHeader from '../components/ProfileHeader.astro';
+import RoleCard from '../components/RoleCard.astro';
+import Section from '../components/Section.astro';
+import TabBar from '../components/TabBar.astro';
+import VideoEmbed from '../components/VideoEmbed.astro';
 import Base from '../layouts/Base.astro';
+import { profile } from '../data/profile';
+import { SECTIONS } from '../data/types';
+
+const title = `${profile.name} — ${profile.headline}`;
+const description =
+  'Employer branding and internal communication portfolio: 6M+ YouTube views, +267% Facebook reach, and the events and content behind them.';
+const icons: Record<(typeof SECTIONS)[number]['id'], string> = {
+  'top-posts': '🔥',
+  experience: '📌',
+  events: '🎉',
+  videos: '🎬',
+  'beyond-work': '🌱',
+  contact: '💌',
+};
+const section = (id: (typeof SECTIONS)[number]['id']) => ({
+  id,
+  title: SECTIONS.find((s) => s.id === id)!.label,
+  icon: icons[id],
+});
 ---
 
-<Base title="Thuy Anh Phi — Employer Branding & Internal Communication" description="Portfolio of Thuy Anh Phi.">
-  <main class="container"><h1>Hello</h1></main>
+<Base title={title} description={description}>
+  <ProfileHeader
+    name={profile.name}
+    headline={profile.headline}
+    bio={profile.bio}
+    skills={profile.skills}
+    avatar={profile.avatar}
+    stats={profile.stats}
+    cvUrl={profile.contact.cv}
+  />
+  <TabBar sections={SECTIONS} />
+
+  <main>
+    <Section {...section('top-posts')}>
+      <HighlightCard {...profile.highlight} />
+      <div class="grid grid--4">
+        {profile.posts.map((post, i) => <PostCard post={post} rank={i + 1} />)}
+      </div>
+    </Section>
+
+    <Section {...section('experience')}>
+      {profile.roles.map((role) => <RoleCard role={role} />)}
+    </Section>
+
+    <Section {...section('events')}>
+      <EventGrid events={profile.events} />
+    </Section>
+
+    <Section {...section('videos')}>
+      <div class="grid grid--3">
+        {profile.videos.map((video) => <VideoEmbed video={video} />)}
+      </div>
+      <h3 class="subhead">📷 Photography</h3>
+      <div class="grid grid--photos">
+        {profile.photos.map((p) => (
+          <figure class="photo card">
+            <Image src={p.src} alt={p.alt} widths={[320, 640]} sizes="(min-width: 640px) 300px, 45vw" />
+          </figure>
+        ))}
+      </div>
+    </Section>
+
+    <Section {...section('beyond-work')}>
+      <div class="grid grid--3">
+        {profile.activities.map((activity) => <ActivityCard activity={activity} />)}
+        <EducationList items={profile.education} />
+      </div>
+    </Section>
+
+    <Section {...section('contact')}>
+      <ContactCard contact={profile.contact} />
+    </Section>
+  </main>
+
+  <Lightbox />
 </Base>
+
+<style>
+  .grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 18px;
+  }
+  @media (min-width: 640px) {
+    .grid--4, .grid--3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (min-width: 960px) {
+    .grid--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
+  .grid--photos { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 640px; }
+  .subhead { font-size: 20px; margin: 32px 0 14px; }
+  .photo { margin: 0; }
+  .photo img { width: 100%; aspect-ratio: 1; object-fit: cover; }
+</style>
