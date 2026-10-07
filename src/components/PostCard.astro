@@ -1,0 +1,95 @@
+---
+import { Image } from 'astro:assets';
+import type { Post } from '../data/types';
+import { linkState } from '../lib/link';
+
+interface Props {
+  post: Post;
+  rank?: number;
+}
+
+const { post, rank } = Astro.props;
+const link = linkState(post.url);
+const Tag = link.href ? 'a' : 'article';
+const tones = ['tone-yellow', 'tone-mint', 'tone-pink', 'tone-lilac'];
+const tone = tones[((rank ?? 1) - 1) % tones.length];
+const linkProps = link.href
+  ? {
+      href: link.href,
+      target: '_blank',
+      rel: 'noopener',
+      'aria-label': `${post.title}, ${post.views} views, opens in new tab`,
+    }
+  : {};
+---
+
+<Tag class="post card" {...linkProps}>
+  <div class:list={['post__media', !post.image && tone]}>
+    {post.image ? (
+      <Image src={post.image.src} alt={post.image.alt} widths={[320, 640]} sizes="(min-width: 960px) 260px, (min-width: 640px) 45vw, 90vw" />
+    ) : (
+      <span class="post__quote" aria-hidden="true">“{post.title}”</span>
+    )}
+    {rank && <span class="post__rank">#{rank}</span>}
+    <span class="post__views">▶ {post.views}</span>
+  </div>
+  <div class="post__body">
+    <h3 class="post__title">{post.title}</h3>
+    {post.detail && <p class="post__detail">{post.detail}</p>}
+    <p class="post__foot">{link.href ? 'View on Facebook ↗' : 'Link coming soon'}</p>
+  </div>
+</Tag>
+
+<style>
+  .post {
+    display: flex;
+    flex-direction: column;
+    text-decoration: none;
+    color: inherit;
+    transition: transform .12s, box-shadow .12s;
+  }
+  a.post:hover { transform: translateY(2px); box-shadow: 0 2px 0 var(--ink); }
+  .post__media {
+    position: relative;
+    aspect-ratio: 4 / 3;
+    border-bottom: var(--border);
+    display: grid;
+    place-items: center;
+    padding: 18px;
+  }
+  .post__media img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .tone-yellow { background: var(--yellow); }
+  .tone-mint { background: var(--mint); }
+  .tone-pink { background: var(--pink); }
+  .tone-lilac { background: #CBBEFF; }
+  .post__quote {
+    font-size: 22px;
+    font-weight: 700;
+    line-height: 1.2;
+    text-align: center;
+  }
+  .post__rank,
+  .post__views {
+    position: absolute;
+    top: 10px;
+    font-size: 13px;
+    font-weight: 700;
+    background: var(--card);
+    border: var(--border);
+    border-radius: 999px;
+    padding: 2px 10px;
+  }
+  .post__rank { left: 10px; }
+  .post__views { right: 10px; background: var(--ink); color: #fff; }
+  .post__body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
+  .post__title { font-size: 17px; }
+  .post__detail { font-size: 14px; color: var(--muted); }
+  .post__foot { margin-top: auto; padding-top: 6px; font-size: 13px; font-weight: 600; color: var(--muted); }
+  a.post .post__foot { color: #5638E0; }
+</style>

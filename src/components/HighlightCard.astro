@@ -1,0 +1,64 @@
+---
+import { Image } from 'astro:assets';
+import type { Photo, Stat } from '../data/types';
+import StatCounter from './StatCounter.astro';
+
+interface Props {
+  title: string;
+  stats: Stat[];
+  text: string;
+  image: Photo;
+}
+
+const { title, stats, text, image } = Astro.props;
+---
+
+<article class="highlight card">
+  <div class="highlight__body">
+    <p class="highlight__kicker">📈 Organic growth · no paid promotion</p>
+    <h3>{title}</h3>
+    <div class="highlight__stats">
+      {stats.map((s) => <StatCounter stat={s} />)}
+    </div>
+    <p class="highlight__text">{text}</p>
+  </div>
+  <figure class="highlight__figure">
+    <Image src={image.src} alt={image.alt} widths={[480, 960]} sizes="(min-width: 900px) 480px, 90vw" />
+  </figure>
+</article>
+
+<style>
+  .highlight {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    margin-bottom: 20px;
+  }
+  .highlight__body { padding: 22px; display: flex; flex-direction: column; gap: 14px; }
+  .highlight__kicker {
+    align-self: flex-start;
+    font-size: 13px;
+    font-weight: 700;
+    background: var(--yellow);
+    border: var(--border);
+    border-radius: 999px;
+    padding: 3px 12px;
+  }
+  h3 { font-size: clamp(20px, 4vw, 26px); }
+  .highlight__stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 14px;
+  }
+  .highlight__text { max-width: 60ch; }
+  .highlight__figure {
+    margin: 0;
+    border-top: var(--border);
+    background: #EDEDED;
+  }
+  .highlight__figure img { width: 100%; height: 100%; object-fit: cover; object-position: left top; }
+
+  @media (min-width: 900px) {
+    .highlight { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }
+    .highlight__figure { border-top: 0; border-left: var(--border); }
+  }
+</style>
