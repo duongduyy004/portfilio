@@ -12,7 +12,8 @@
     "astro": "astro",
     "check": "astro check",
     "test": "vitest run",
-    "test:e2e": "playwright test"
+    "test:e2e": "playwright test",
+    "media": "python scripts/extract_media.py \"Portfolio Phi Thuy Anh - Internal Communication (2026).pptx\" src/assets/media && node scripts/transcode.mjs \"Portfolio Phi Thuy Anh - Internal Communication (2026).pptx\""
   },
   "dependencies": {
     "@fontsource/space-grotesk": "^5.3.0",
