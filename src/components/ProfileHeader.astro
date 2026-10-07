@@ -1,0 +1,104 @@
+---
+import { Image } from 'astro:assets';
+import type { Photo, Stat } from '../data/types';
+import StatCounter from './StatCounter.astro';
+
+interface Props {
+  name: string;
+  headline: string;
+  bio: string;
+  skills: string[];
+  avatar: Photo;
+  stats: Stat[];
+  cvUrl?: string;
+}
+
+const { name, headline, bio, skills, avatar, stats, cvUrl } = Astro.props;
+const chipColours = ['chip--yellow', 'chip--mint', 'chip--pink'];
+---
+
+<header class="profile container">
+  <div class="profile__card card">
+    <div class="profile__avatar">
+      <Image src={avatar.src} alt={avatar.alt} widths={[168, 336]} sizes="168px" loading="eager" fetchpriority="high" />
+    </div>
+    <div class="profile__body">
+      <h1>{name}</h1>
+      <p class="profile__headline">{headline}</p>
+      <p class="profile__bio">{bio}</p>
+      <ul class="profile__chips">
+        {skills.map((s, i) => <li class:list={['chip', chipColours[i % chipColours.length]]}>{s}</li>)}
+      </ul>
+      <div class="profile__actions">
+        <a class="btn btn--primary" href="#contact">Contact me</a>
+        {cvUrl && <a class="btn" href={cvUrl} download>Download CV</a>}
+      </div>
+    </div>
+    <div class="profile__stats">
+      {stats.map((s) => <StatCounter stat={s} size="lg" />)}
+    </div>
+  </div>
+</header>
+
+<style>
+  .profile { padding-top: 24px; }
+  .profile__card {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 20px;
+    padding: 24px;
+    border-radius: var(--radius-lg);
+  }
+  .profile__avatar {
+    width: 128px;
+    height: 128px;
+    border-radius: 50%;
+    padding: 5px;
+    background: linear-gradient(135deg, var(--pink), var(--accent), var(--mint));
+  }
+  .profile__avatar img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    object-position: center 12%;
+    background: var(--card);
+  }
+  h1 { font-size: clamp(30px, 7vw, 44px); }
+  /* darker than --accent so the headline passes AA on white */
+  .profile__headline { color: #5638E0; font-weight: 700; margin-top: 4px; }
+  .profile__bio { margin-top: 10px; max-width: 52ch; }
+  .profile__chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    list-style: none;
+    padding: 0;
+    margin: 14px 0 0;
+  }
+  .profile__actions { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 18px; }
+  .profile__stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    padding-top: 16px;
+    border-top: 2px dashed var(--ink);
+  }
+
+  @media (min-width: 900px) {
+    .profile__card {
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 28px;
+      padding: 32px;
+    }
+    .profile__avatar { width: 168px; height: 168px; }
+    .profile__stats {
+      grid-template-columns: 1fr;
+      padding: 0 0 0 28px;
+      border-top: 0;
+      border-left: 2px dashed var(--ink);
+      gap: 18px;
+    }
+  }
+</style>

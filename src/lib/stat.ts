@@ -20,3 +20,13 @@ export function parseStat(value: string): ParsedStat | null {
     grouping: digits.includes(','),
   };
 }
+
+/** Format a number back into the shape parseStat read it from. */
+export function formatStat(stat: ParsedStat, n: number): string {
+  const body = n.toLocaleString('en-US', {
+    minimumFractionDigits: stat.decimals,
+    maximumFractionDigits: stat.decimals,
+    useGrouping: stat.grouping,
+  });
+  return `${stat.prefix}${body}${stat.suffix}`;
+}

@@ -1,0 +1,87 @@
+---
+interface Props {
+  sections: readonly { id: string; label: string }[];
+}
+
+const { sections } = Astro.props;
+---
+
+<nav class="tabbar" aria-label="Sections">
+  <ul class="tabbar__list container">
+    {sections.map((s) => (
+      <li><a class="tabbar__tab" href={`#${s.id}`} data-tab={s.id}>{s.label}</a></li>
+    ))}
+  </ul>
+</nav>
+
+<style>
+  .tabbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background: color-mix(in srgb, var(--bg) 92%, transparent);
+    backdrop-filter: blur(8px);
+    border-bottom: 2px solid var(--ink);
+  }
+  .tabbar__list {
+    display: flex;
+    gap: 8px;
+    list-style: none;
+    margin-block: 0;
+    padding-block: 10px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .tabbar__list::-webkit-scrollbar { display: none; }
+  .tabbar__tab {
+    display: inline-block;
+    white-space: nowrap;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 7px 16px;
+    border-radius: 999px;
+    border: var(--border);
+    background: var(--card);
+  }
+  .tabbar__tab[aria-current="true"] {
+    background: var(--ink);
+    color: #fff;
+  }
+</style>
+
+<script>
+  const tabs = new Map(
+    [...document.querySelectorAll<HTMLAnchorElement>('[data-tab]')].map((a) => [a.dataset.tab!, a]),
+  );
+  const visible = new Set<string>();
+
+  function update() {
+    // the first on-screen section in document order wins
+    const current = [...tabs.keys()].find((id) => visible.has(id));
+    for (const [id, a] of tabs) {
+      if (id === current) {
+        a.setAttribute('aria-current', 'true');
+        a.parentElement?.parentElement?.scrollTo({ left: a.offsetLeft - 16, behavior: 'smooth' });
+      } else {
+        a.removeAttribute('aria-current');
+      }
+    }
+  }
+
+  const observer = new IntersectionObserver(
+    (entries) => {
+      for (const e of entries) {
+        if (e.isIntersecting) visible.add(e.target.id);
+        else visible.delete(e.target.id);
+      }
+      update();
+    },
+    { rootMargin: '-80px 0px -55% 0px' },
+  );
+
+  for (const id of tabs.keys()) {
+    const el = document.getElementById(id);
+    if (el) observer.observe(el);
+  }
+</script>

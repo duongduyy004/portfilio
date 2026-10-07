@@ -1,0 +1,66 @@
+import { describe, expect, it } from 'vitest';
+import ProfileHeader from '../../src/components/ProfileHeader.astro';
+import Section from '../../src/components/Section.astro';
+import TabBar from '../../src/components/TabBar.astro';
+import { profile } from '../../src/data/profile';
+import { SECTIONS } from '../../src/data/types';
+import { formatStat, parseStat } from '../../src/lib/stat';
+import { render } from './render';
+
+const headerProps = {
+  name: profile.name,
+  headline: profile.headline,
+  bio: profile.bio,
+  skills: profile.skills,
+  avatar: profile.avatar,
+  stats: profile.stats,
+};
+
+describe('formatStat', () => {
+  it('round-trips each stat shape', () => {
+    for (const v of ['+267%', '6M+', '687,370', '13.3K', '5']) {
+      expect(formatStat(parseStat(v)!, parseStat(v)!.number)).toBe(v);
+    }
+  });
+  it('formats an intermediate value', () => {
+    expect(formatStat(parseStat('687,370')!, 1234)).toBe('1,234');
+  });
+});
+
+describe('ProfileHeader', () => {
+  it('has exactly one h1 with the name', async () => {
+    const html = await render(ProfileHeader, headerProps);
+    expect(html.match(/<h1/g)).toHaveLength(1);
+    expect(html).toMatch(/<h1[^>]*>\s*Thuy Anh Phi\s*<\/h1>/);
+  });
+  it('renders final stat values in server HTML', async () => {
+    const html = await render(ProfileHeader, headerProps);
+    for (const v of ['6M+', '+267%', '160K']) expect(html).toContain(`>${v}<`);
+  });
+  it('hides Download CV without a cv url', async () => {
+    const html = await render(ProfileHeader, headerProps);
+    expect(html).not.toContain('Download CV');
+  });
+  it('shows Download CV with a cv url', async () => {
+    const html = await render(ProfileHeader, { ...headerProps, cvUrl: '/cv.pdf' });
+    expect(html).toContain('Download CV');
+  });
+});
+
+describe('TabBar', () => {
+  it('links every section in order', async () => {
+    const html = await render(TabBar, { sections: SECTIONS });
+    const hrefs = [...html.matchAll(/href="#([^"]+)"/g)].map((m) => m[1]);
+    expect(hrefs).toEqual(SECTIONS.map((s) => s.id));
+  });
+});
+
+describe('Section', () => {
+  it('labels the section by its heading', async () => {
+    const html = await render(Section, { id: 'events', title: 'Events', icon: '🎉' }, { default: '<p>x</p>' });
+    expect(html).toContain('id="events"');
+    const labelledby = /aria-labelledby="([^"]+)"/.exec(html)![1];
+    expect(html).toMatch(new RegExp(`<h2[^>]*id="${labelledby}"`));
+    expect(html).toContain('<p>x</p>');
+  });
+});

@@ -1,0 +1,61 @@
+---
+import type { Stat } from '../data/types';
+
+interface Props {
+  stat: Stat;
+  size?: 'lg' | 'md';
+}
+
+const { stat, size = 'md' } = Astro.props;
+---
+
+<span class:list={['stat', `stat--${size}`]}>
+  <span class="stat__value" data-count={stat.value}>{stat.value}</span>
+  <span class="stat__label">{stat.label}</span>
+</span>
+
+<style>
+  .stat { display: flex; flex-direction: column; min-width: 0; }
+  .stat__value {
+    font-weight: 700;
+    line-height: 1.05;
+    font-variant-numeric: tabular-nums;
+  }
+  .stat--lg .stat__value { font-size: clamp(26px, 6vw, 34px); }
+  .stat--md .stat__value { font-size: clamp(20px, 4vw, 24px); }
+  .stat__label { font-size: 13px; color: var(--muted); }
+</style>
+
+<script>
+  import { formatStat, parseStat } from '../lib/stat';
+
+  const DURATION = 1200;
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function animate(el: HTMLElement) {
+    const parsed = parseStat(el.dataset.count ?? '');
+    if (!parsed) return;
+    const start = performance.now();
+    const tick = (now: number) => {
+      const t = Math.min(1, (now - start) / DURATION);
+      const eased = 1 - Math.pow(1 - t, 3);
+      el.textContent = t < 1 ? formatStat(parsed, parsed.number * eased) : el.dataset.count!;
+      if (t < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }
+
+  if (!reduce) {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) {
+          if (!e.isIntersecting) continue;
+          observer.unobserve(e.target);
+          animate(e.target as HTMLElement);
+        }
+      },
+      { threshold: 0.6 },
+    );
+    document.querySelectorAll<HTMLElement>('[data-count]').forEach((el) => observer.observe(el));
+  }
+</script>
