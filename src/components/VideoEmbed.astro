@@ -1,0 +1,118 @@
+---
+import { Image } from 'astro:assets';
+import type { Video } from '../data/types';
+import { embedUrl } from '../lib/embed';
+import { linkState } from '../lib/link';
+
+interface Props {
+  video: Video;
+}
+
+const { video } = Astro.props;
+const link = linkState(video.url);
+const embed = embedUrl(video.kind, link.href ?? undefined);
+const posterSrc = typeof video.poster === 'string' ? video.poster : undefined;
+const posterImage = typeof video.poster === 'string' ? undefined : video.poster;
+const platform = { youtube: 'YouTube', tiktok: 'TikTok', link: 'link', file: '' }[video.kind];
+---
+
+<article class="video card">
+  <div class="video__media">
+    {video.kind === 'file' ? (
+      <video controls preload="none" playsinline poster={posterSrc} aria-label={video.title}>
+        <source src={video.src} type="video/mp4" />
+      </video>
+    ) : link.href ? (
+      <a
+        class="video__poster"
+        href={link.href}
+        target="_blank"
+        rel="noopener"
+        data-embed={embed ?? undefined}
+        data-title={video.title}
+        aria-label={embed ? `Play ${video.title}` : `${video.title}, opens in new tab`}
+      >
+        {posterImage && <Image src={posterImage.src} alt="" widths={[320, 640]} sizes="(min-width: 960px) 340px, 90vw" />}
+        <span class="video__play" aria-hidden="true">{embed ? '▶' : '↗'}</span>
+      </a>
+    ) : (
+      <div class="video__poster video__poster--soon">
+        {posterImage && <Image src={posterImage.src} alt={posterImage.alt} widths={[320, 640]} sizes="(min-width: 960px) 340px, 90vw" />}
+        <span class="video__soon">Link coming soon</span>
+      </div>
+    )}
+  </div>
+  <div class="video__body">
+    <h3>{video.title}</h3>
+    {video.caption && <p>{video.caption}</p>}
+    {video.kind !== 'file' && !link.href && <p class="video__foot">{platform} coming soon</p>}
+  </div>
+</article>
+
+<style>
+  .video { display: flex; flex-direction: column; }
+  .video__media {
+    position: relative;
+    aspect-ratio: 4 / 5;
+    background: var(--ink);
+    border-bottom: var(--border);
+  }
+  .video__media video,
+  .video__media img,
+  .video__media :global(iframe) {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border: 0;
+  }
+  .video__media video { object-fit: contain; }
+  .video__poster { display: block; position: absolute; inset: 0; }
+  .video__play {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    translate: -50% -50%;
+    display: grid;
+    place-items: center;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--yellow);
+    border: var(--border);
+    box-shadow: var(--shadow);
+    font-size: 24px;
+  }
+  .video__poster--soon img { filter: grayscale(.4); opacity: .85; }
+  .video__soon {
+    position: absolute;
+    left: 12px;
+    bottom: 12px;
+    font-size: 13px;
+    font-weight: 700;
+    background: var(--card);
+    border: var(--border);
+    border-radius: 999px;
+    padding: 2px 10px;
+  }
+  .video__body { padding: 12px 16px 16px; display: grid; gap: 4px; }
+  h3 { font-size: 18px; }
+  p { font-size: 14px; color: var(--muted); }
+  .video__foot { font-weight: 600; }
+</style>
+
+<script>
+  document.addEventListener('click', (event) => {
+    const poster = (event.target as HTMLElement).closest<HTMLAnchorElement>('a[data-embed]');
+    if (!poster) return;
+    event.preventDefault();
+    const iframe = document.createElement('iframe');
+    iframe.src = poster.dataset.embed!;
+    iframe.title = poster.dataset.title ?? 'Video';
+    iframe.allow = 'autoplay; encrypted-media; picture-in-picture';
+    iframe.allowFullscreen = true;
+    poster.replaceWith(iframe);
+    iframe.focus();
+  });
+</script>
