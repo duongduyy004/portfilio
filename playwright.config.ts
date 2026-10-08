@@ -7,8 +7,8 @@ export default defineConfig({
   testDir: 'tests/e2e',
   fullyParallel: true,
   reporter: 'list',
-  // a full run (~180 tests, parallel workers) can slow script start-up past the 5s default
-  expect: { timeout: 10_000 },
+  // 12 cores → 6 workers by default; at 6, CPU contention slowed page start-up past 5s
+  workers: 4,
   use: { baseURL: 'http://localhost:4322' },
   webServer: {
     command: 'npm run build && npm run preview -- --port 4322',
@@ -17,11 +17,12 @@ export default defineConfig({
     timeout: 180_000,
   },
   // Tests tagged @timing depend on wheel-event cadence, which CPU contention from parallel
-  // workers can stretch. They run in their own projects, only after the main ones have finished.
+  // workers can stretch. `npm run test:e2e` runs them as a second phase with one worker.
+  // (Not `dependencies`: those would skip all timing results whenever any main test failed.)
   projects: [
     { name: 'mobile', grepInvert: /@timing/, use: MOBILE },
     { name: 'desktop', grepInvert: /@timing/, use: DESKTOP },
-    { name: 'timing-mobile', grep: /@timing/, dependencies: ['mobile', 'desktop'], use: MOBILE },
-    { name: 'timing-desktop', grep: /@timing/, dependencies: ['mobile', 'desktop'], use: DESKTOP },
+    { name: 'timing-mobile', grep: /@timing/, use: MOBILE },
+    { name: 'timing-desktop', grep: /@timing/, use: DESKTOP },
   ],
 });

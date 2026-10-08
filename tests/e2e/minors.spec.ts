@@ -22,11 +22,17 @@ test.describe('motion', () => {
       const deck = document.querySelector<HTMLElement>('[data-deck]')!;
       deck.scrollTo({ left: 2 * deck.clientWidth, behavior: 'auto' });
     });
+    // the drop-in must actually be running, or this test proves nothing
+    await expect
+      .poll(() => card.evaluate((e) => e.getAnimations().some((a) => a instanceof CSSAnimation && a.playState === 'running')), {
+        intervals: [10],
+        timeout: 1500,
+      })
+      .toBe(true);
     const box = (await card.boundingBox())!;
     await page.mouse.move(box.x + 20, box.y + 20);
-    await page.mouse.move(box.x + box.width - 20, box.y + 30, { steps: 3 });
-    const running = await card.evaluate((e) => e.getAnimations().some((a) => a.playState === 'running'));
-    if (running) await expect(card).not.toHaveClass(/is-tilting/);
+    await page.mouse.move(box.x + box.width - 20, box.y + 30, { steps: 2 });
+    await expect(card).not.toHaveClass(/is-tilting/);
     await page.waitForTimeout(1200);
     await page.mouse.move(box.x + box.width - 30, box.y + 40, { steps: 3 });
     await expect(card).toHaveClass(/is-tilting/);
@@ -92,6 +98,32 @@ test.describe('deck navigation', () => {
     await expect(next).toBeFocused();
     await page.keyboard.press('Enter');
     await expect(counter(page)).toHaveText('03 / 10');
+  });
+
+  test('#11b an arrow that hides at the end hands focus on instead of dropping it', async ({ page }) => {
+    test.skip(!desktop(page), 'arrows are hidden on phones');
+    await page.goto('/#slide-9');
+    await expect(counter(page)).toHaveText('09 / 10');
+    const next = page.locator('[data-deck-next]');
+    await next.focus();
+    await page.keyboard.press('Enter');
+    await expect(counter(page)).toHaveText('10 / 10');
+    await expect(page.locator('[data-deck-prev]')).toBeFocused();
+    await page.goto('/#slide-2');
+    await expect(counter(page)).toHaveText('02 / 10');
+    await page.locator('[data-deck-prev]').focus();
+    await page.keyboard.press('Enter');
+    await expect(counter(page)).toHaveText('01 / 10');
+    await expect(next).toBeFocused();
+  });
+
+  test('#21b the skip link goes to the slide you are on', async ({ page }) => {
+    await page.goto('/#slide-6');
+    await expect(counter(page)).toHaveText('06 / 10');
+    await page.getByRole('link', { name: 'Skip to slides' }).focus();
+    await page.keyboard.press('Enter');
+    await expect(slide(page, 6)).toBeFocused();
+    await expect(counter(page)).toHaveText('06 / 10');
   });
 
   test('#12 keyboard focus on a slide is visible', async ({ page }) => {

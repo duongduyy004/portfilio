@@ -82,10 +82,11 @@
   .slide__blobs span:nth-child(1) { animation: blob-a 22s ease-in-out infinite alternate; }
   .slide__blobs span:nth-child(2) { animation: blob-b 26s ease-in-out infinite alternate; }
   .slide__blobs span:nth-child(3) { animation: blob-c 30s ease-in-out infinite alternate; }
-  /* only the slide on screen drifts (SlideNav marks it); without JS none is marked, so all drift */
+  /* only the slide on screen drifts (SlideNav marks it [data-current]) */
   .deck:has([data-current]) .slide:not([data-current]) .slide__blobs span { animation-play-state: paused; }
-  /* without JS nothing marks a current slide: only the first slide (the one on screen) drifts */
-  html:not(.deck-on) .slide:not(:first-child) .slide__blobs span { animation-play-state: paused; }
+  /* without the navigation script (no JS, or it failed) nothing marks a current slide:
+     only the first slide (the one on screen at load) drifts */
+  html:not(.deck-nav) .slide:not(:first-child) .slide__blobs span { animation-play-state: paused; }
 }
 @keyframes blob-a { to { translate: 12vmax 8vmax; scale: 1.15; } }
 @keyframes blob-b { to { translate: -10vmax -6vmax; scale: 0.9; } }

@@ -123,8 +123,14 @@ const { slides } = Astro.props;
   }
 
   function updateArrows() {
+    const hadFocus = document.activeElement;
     if (prevBtn) prevBtn.hidden = !wide.matches || current <= 0;
     if (nextBtn) nextBtn.hidden = !wide.matches || current >= last;
+    // hiding the focused arrow (at either end) would drop focus to <body>: hand it on instead
+    if ((hadFocus === prevBtn && prevBtn?.hidden) || (hadFocus === nextBtn && nextBtn?.hidden)) {
+      const other = hadFocus === prevBtn ? nextBtn : prevBtn;
+      (other && !other.hidden ? other : slides[current]).focus({ preventScroll: true });
+    }
   }
 
   function updateHint(s: HTMLElement) {
@@ -221,6 +227,12 @@ const { slides } = Astro.props;
     if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
     const link = (e.target as HTMLElement).closest<HTMLAnchorElement>('a[href^="#slide-"]');
     if (!link) return;
+    // the skip link targets slide 1 for no-JS; with JS it lands on the slide being shown
+    if (link.hasAttribute('data-skip')) {
+      e.preventDefault();
+      slides[Math.max(current, 0)].focus({ preventScroll: true });
+      return;
+    }
     const i = slides.findIndex((s) => `#${s.id}` === link.getAttribute('href'));
     if (i < 0) return;
     e.preventDefault();
