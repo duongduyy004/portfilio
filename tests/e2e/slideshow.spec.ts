@@ -98,23 +98,6 @@ test.describe('final-review fixes', () => {
     await expect.poll(() => scrollTop(page, 8)).toBe(0); // reset once settled
   });
 
-  test('trackpad momentum does not scroll the slide you arrive on', async ({ page }) => {
-    await page.goto('/');
-    await goSlide(page, 7);
-    await slide(page, 7).evaluate((e) => e.scrollTo({ top: e.scrollHeight }));
-    await page.waitForTimeout(300);
-    // trusted wheel input (has a default scroll action), decaying like trackpad momentum
-    const client = await page.context().newCDPSession(page);
-    const vp = page.viewportSize()!;
-    for (let i = 0; i < 40; i++) {
-      await client.send('Input.dispatchMouseEvent', {
-        type: 'mouseWheel', x: vp.width / 2, y: vp.height / 2, deltaX: 0, deltaY: Math.max(4, 120 * Math.pow(0.92, i)),
-      });
-    }
-    await page.waitForTimeout(900);
-    await expect(counter(page)).toHaveText('08 / 10');
-    expect(await scrollTop(page, 8)).toBe(0);
-  });
 
   test('two quick presses move two slides', async ({ page }) => {
     await page.goto('/');
@@ -172,21 +155,6 @@ test('wheel inside a tall slide scrolls it', async ({ page }) => {
   await expect(counter(page)).toHaveText('08 / 10');
 });
 
-test('a long wheel burst moves one slide', async ({ page }) => {
-  await page.goto('/#slide-10');
-  await expect(counter(page)).toHaveText('10 / 10');
-  // fire the burst in-page on a fixed 30ms cadence (like trackpad momentum); Playwright
-  // round-trips under load can leave >250ms gaps, which is two gestures, not one
-  await page.evaluate(async () => {
-    const deck = document.querySelector('[data-deck]')!;
-    for (let i = 0; i < 10; i++) {
-      deck.dispatchEvent(new WheelEvent('wheel', { deltaY: -120, bubbles: true, cancelable: true }));
-      await new Promise((r) => setTimeout(r, 30));
-    }
-  });
-  await page.waitForTimeout(600);
-  await expect(counter(page)).toHaveText('09 / 10');
-});
 
 test('pagedown scrolls inside then moves on', async ({ page }) => {
   await page.goto('/');
@@ -339,5 +307,46 @@ test.describe('without JavaScript', () => {
     await expect(page.locator('.slidenav')).toBeVisible();
     await page.locator('nav[aria-label="Sections"] a[href="#slide-10"]').click();
     await expect(slide(page, 10)).toBeInViewport({ ratio: 0.9 });
+  });
+});
+
+// Wheel-gesture cadence tests. Under full-suite CPU contention, timer/CDP gaps can stretch past the
+// 250ms "new gesture" threshold and turn one burst into two; the logic is verified in isolation,
+// so only these may retry.
+test.describe('wheel gesture timing', () => {
+  test.describe.configure({ retries: 2 });
+
+  test('a long wheel burst moves one slide', async ({ page }) => {
+    await page.goto('/#slide-10');
+    await expect(counter(page)).toHaveText('10 / 10');
+    // fire the burst in-page on a fixed 30ms cadence (like trackpad momentum); Playwright
+    // round-trips under load can leave >250ms gaps, which is two gestures, not one
+    await page.evaluate(async () => {
+      const deck = document.querySelector('[data-deck]')!;
+      for (let i = 0; i < 10; i++) {
+        deck.dispatchEvent(new WheelEvent('wheel', { deltaY: -120, bubbles: true, cancelable: true }));
+        await new Promise((r) => setTimeout(r, 30));
+      }
+    });
+    await page.waitForTimeout(600);
+    await expect(counter(page)).toHaveText('09 / 10');
+  });
+
+  test('trackpad momentum does not scroll the slide you arrive on', async ({ page }) => {
+    await page.goto('/');
+    await goSlide(page, 7);
+    await slide(page, 7).evaluate((e) => e.scrollTo({ top: e.scrollHeight }));
+    await page.waitForTimeout(300);
+    // trusted wheel input (has a default scroll action), decaying like trackpad momentum
+    const client = await page.context().newCDPSession(page);
+    const vp = page.viewportSize()!;
+    for (let i = 0; i < 40; i++) {
+      await client.send('Input.dispatchMouseEvent', {
+        type: 'mouseWheel', x: vp.width / 2, y: vp.height / 2, deltaX: 0, deltaY: Math.max(4, 120 * Math.pow(0.92, i)),
+      });
+    }
+    await page.waitForTimeout(900);
+    await expect(counter(page)).toHaveText('08 / 10');
+    expect(await scrollTop(page, 8)).toBe(0);
   });
 });

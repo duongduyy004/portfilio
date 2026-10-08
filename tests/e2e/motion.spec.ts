@@ -222,3 +222,43 @@ test('only the current slide animates its blobs', async ({ page }) => {
   expect(states[3]).toBe('running');
   expect(states.filter((s, i) => i !== 3 && s === 'running')).toEqual([]);
 });
+
+test.describe('swipe-linked transitions', () => {
+  const supported = (page: Page) => page.evaluate(() => CSS.supports('animation-timeline: view()'));
+
+  test('leaving slide shrinks mid-swipe', async ({ page }) => {
+    await page.goto('/');
+    test.skip(!(await supported(page)), 'needs scroll-driven animations');
+    await goSlide(page, 2);
+    const scale = await page.evaluate(async () => {
+      const deck = document.querySelector<HTMLElement>('[data-deck]')!;
+      deck.style.scrollSnapType = 'none';
+      deck.scrollLeft = 1.5 * deck.clientWidth;
+      await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
+      const s = getComputedStyle(document.querySelector('#slide-2 .slide__inner')!).scale;
+      return s === 'none' ? 1 : parseFloat(s);
+    });
+    expect(scale).toBeLessThan(1);
+  });
+
+  test('current slide content is crisp at rest', async ({ page }) => {
+    await page.goto('/');
+    await goSlide(page, 3);
+    await page.waitForTimeout(300);
+    const st = await page.locator('#slide-3 .slide__inner').evaluate((e) => {
+      const c = getComputedStyle(e);
+      return { scale: c.scale, opacity: c.opacity, filter: c.filter };
+    });
+    expect(['none', '1'].includes(st.scale)).toBe(true);
+    expect(st.opacity).toBe('1');
+    expect(st.filter).toBe('none');
+  });
+
+  test.describe('reduced motion', () => {
+    test.use({ reducedMotion: 'reduce' });
+    test('no slide transition', async ({ page }) => {
+      await page.goto('/');
+      expect(await page.locator('#slide-2 .slide__inner').evaluate((e) => getComputedStyle(e).animationName)).toBe('none');
+    });
+  });
+});

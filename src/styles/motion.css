@@ -111,3 +111,58 @@
   .ticker { overflow-x: auto; }
 }
 @keyframes ticker { to { translate: -50% 0; } }
+
+/* ---------- 3.1 swipe-linked slide transitions ----------
+   Each slide's visibility in the deck (a named inline view timeline; the slide's own vertical
+   scroller would make view() track the wrong axis) drives its content. */
+.slide--lavender { --prev-tone: var(--tone-lilac); --next-tone: var(--tone-yellow); }
+.slide--yellow { --prev-tone: var(--tone-lavender); --next-tone: var(--tone-mint); }
+.slide--mint { --prev-tone: var(--tone-yellow); --next-tone: var(--tone-pink); }
+.slide--pink { --prev-tone: var(--tone-mint); --next-tone: var(--tone-lilac); }
+.slide--lilac { --prev-tone: var(--tone-pink); --next-tone: var(--tone-lavender); }
+.slide:first-child { --prev-tone: var(--tone); }
+.slide:last-of-type { --next-tone: var(--tone); }
+/* soft wash across each boundary: both neighbours meet at the same mixed colour */
+.slide {
+  background: linear-gradient(
+    to right,
+    color-mix(in srgb, var(--prev-tone) 50%, var(--tone)) 0,
+    var(--tone) 48px,
+    var(--tone) calc(100% - 48px),
+    color-mix(in srgb, var(--tone) 50%, var(--next-tone)) 100%
+  );
+}
+
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .slide { view-timeline: --slide inline; }
+    .slide > .slide__inner {
+      animation-name: slide-exit;
+      animation-timing-function: linear;
+      animation-fill-mode: none; /* only during the swipe: nothing lingers at rest */
+      animation-timeline: --slide;
+      animation-range: exit 1% exit 100%; /* a resting slide sits at exactly exit 0% */
+    }
+    .slide__head {
+      animation-name: slide-enter-head;
+      animation-timing-function: linear;
+      animation-fill-mode: none; /* only during the swipe: nothing lingers at rest */
+      animation-timeline: --slide;
+      animation-range: entry 0% entry 40%;
+    }
+    /* wrappers only: cards carrying [data-reveal] keep their own drop-in animation */
+    .slide__inner > :not(.slide__head):not([data-reveal]) {
+      animation-name: slide-enter-body;
+      animation-timing-function: linear;
+      animation-fill-mode: none; /* only during the swipe: nothing lingers at rest */
+      animation-timeline: --slide;
+      animation-range: entry 0% entry 60%;
+    }
+  }
+}
+@keyframes slide-exit { to { scale: 0.94; opacity: 0.3; } }
+@keyframes slide-enter-head { from { translate: 40px 0; } }
+@keyframes slide-enter-body { from { translate: 80px 0; } }
+@media (min-width: 640px) {
+  @keyframes slide-exit { to { scale: 0.94; opacity: 0.3; filter: blur(4px); } }
+}
