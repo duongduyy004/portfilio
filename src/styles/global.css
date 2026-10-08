@@ -218,7 +218,7 @@ html.deck-on body { height: 100%; overflow: hidden; }
 :is(ul, .grid) > [data-reveal]:nth-child(7) { --i: 6; }
 :is(ul, .grid) > [data-reveal]:nth-child(n + 8) { --i: 7; }
 
-.reveal-on [data-reveal] { opacity: 0; }
+.reveal-on [data-reveal]:not([data-reveal='words']) { opacity: 0; }
 .reveal-on [data-reveal].is-in {
   opacity: 1;
   /* backwards, not both: once landed, hover transforms work again */

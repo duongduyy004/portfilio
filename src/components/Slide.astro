@@ -1,5 +1,6 @@
 ---
 import type { SlideDef } from '../data/slides';
+import SplitWords from './SplitWords.astro';
 
 type Props = SlideDef & { hideHeader?: boolean };
 
@@ -22,7 +23,7 @@ const headingId = `${id}-heading`;
     {!hideHeader && (
       <header class="slide__head">
         <span class="slide__icon" aria-hidden="true" data-reveal="spin"><span>{icon}</span></span>
-        <h2 id={headingId}>{title}</h2>
+        <h2 id={headingId} data-reveal="words"><SplitWords text={title} /></h2>
       </header>
     )}
     <slot />

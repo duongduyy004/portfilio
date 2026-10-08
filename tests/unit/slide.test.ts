@@ -12,7 +12,8 @@ describe('Slide', () => {
     expect(html).toContain('data-slide');
     expect(html).toMatch(/<span[^>]*id="events"/);
     const labelledby = /aria-labelledby="([^"]+)"/.exec(html)![1];
-    expect(html).toMatch(new RegExp(`<h2[^>]*id="${labelledby}"[^>]*>[\s\S]*Events`));
+    const h2 = new RegExp(`<h2[^>]*id="${labelledby}"[^>]*>([\\s\\S]*?)</h2>`).exec(html)!;
+    expect(h2[1].replace(/<[^>]+>/g, '').trim()).toBe('Events');
     expect(html).toContain('<p>x</p>');
   });
 

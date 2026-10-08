@@ -1,0 +1,13 @@
+---
+import { splitWords } from '../lib/motion';
+
+interface Props {
+  text: string;
+}
+
+const words = splitWords(Astro.props.text);
+---
+
+{words.map((w, i) => (
+  <>{i > 0 && ' '}<span class="word" style={`--w:${i}`}>{w}</span></>
+))}

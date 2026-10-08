@@ -1,5 +1,6 @@
 ---
 import type { Photo, Stat } from '../data/types';
+import SplitWords from './SplitWords.astro';
 import StatCounter from './StatCounter.astro';
 import ZoomImage from './ZoomImage.astro';
 
@@ -23,7 +24,7 @@ const chipColours = ['chip--yellow', 'chip--mint', 'chip--pink'];
       <ZoomImage class="profile__avatar-link" photo={avatar} caption={name} widths={[168, 336]} sizes="168px" loading="eager" fetchpriority="high" />
     </div>
     <div class="profile__body">
-      <h1>{name}</h1>
+      <h1 data-reveal="words"><SplitWords text={name} /></h1>
       <p class="profile__headline">{headline}</p>
       <p class="profile__bio">{bio}</p>
       <ul class="profile__chips">

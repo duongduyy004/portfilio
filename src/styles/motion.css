@@ -1,0 +1,18 @@
+/* Modern motion layer (spec: docs/superpowers/specs/2026-10-08-motion-design.md).
+   Everything here is off under prefers-reduced-motion; final states are the defaults. */
+
+/* ---------- 3.2 heading word reveal (triggered by Reveal's .is-in) ---------- */
+@media (prefers-reduced-motion: no-preference) {
+  .reveal-on [data-reveal='words'] .word {
+    display: inline-block;
+    opacity: 0;
+    filter: blur(8px);
+    translate: 0 0.4em;
+  }
+  .reveal-on [data-reveal='words'].is-in .word {
+    animation: word-in 0.6s cubic-bezier(0.2, 0.7, 0.2, 1) calc(var(--w) * 60ms) both;
+  }
+}
+@keyframes word-in {
+  to { opacity: 1; filter: none; translate: 0 0; }
+}

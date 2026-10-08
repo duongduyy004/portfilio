@@ -31,7 +31,8 @@ describe('ProfileHeader', () => {
   it('has exactly one h1 with the name', async () => {
     const html = await render(ProfileHeader, headerProps);
     expect(html.match(/<h1/g)).toHaveLength(1);
-    expect(html).toMatch(/<h1[^>]*>\s*Thuy Anh Phi\s*<\/h1>/);
+    const h1 = /<h1[^>]*>([\s\S]*?)<\/h1>/.exec(html)!;
+    expect(h1[1].replace(/<[^>]+>/g, '').replace(/\s+/g, ' ').trim()).toBe('Thuy Anh Phi');
   });
   it('renders final stat values in server HTML', async () => {
     const html = await render(ProfileHeader, headerProps);
