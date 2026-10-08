@@ -27,47 +27,249 @@ const { slides } = Astro.props;
     background: var(--card);
     border: var(--border);
     border-radius: 999px;
-    padding: 6px 10px;
+    padding: 2px 6px;
   }
   .slidenav ol {
     list-style: none;
     margin: 0;
     padding: 0;
     display: flex;
-    gap: 8px;
   }
+  /* 24×24 tap target (WCAG 2.5.8) around a 12px dot */
   .slidenav__dot {
     position: relative;
-    display: block;
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+  }
+  .slidenav__dot::before {
+    content: '';
     width: 12px;
     height: 12px;
     border-radius: 50%;
     background: var(--card);
     border: var(--border);
+    box-sizing: border-box;
   }
-  .slidenav__dot[aria-current="true"] { background: var(--ink); }
+  .slidenav__dot[aria-current="true"]::before { background: var(--ink); }
+  /* visually hidden on phones (it would cover the slide) but still the link's accessible name */
   .slidenav__label {
     position: absolute;
-    bottom: calc(100% + 12px);
-    left: 50%;
-    translate: -50% 0;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
     white-space: nowrap;
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--ink);
-    background: var(--card);
-    border: var(--border);
-    border-radius: 999px;
-    padding: 2px 10px;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity .15s;
   }
-  /* on phones the label would cover the slide; the counter in the tab bar says where you are */
-  .slidenav__label { display: none; }
   @media (min-width: 640px) {
-    .slidenav__label { display: block; }
+    .slidenav__label {
+      width: auto;
+      height: auto;
+      overflow: visible;
+      clip: auto;
+      bottom: calc(100% + 8px);
+      left: 50%;
+      translate: -50% 0;
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink);
+      background: var(--card);
+      border: var(--border);
+      border-radius: 999px;
+      padding: 2px 10px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .15s;
+    }
     .slidenav__dot:hover .slidenav__label,
     .slidenav__dot:focus-visible .slidenav__label { opacity: 1; }
   }
 </style>
+
+<script>
+  import { counterText, currentSlideX, navKey, wheelStep } from '../lib/slidenav';
+
+  const deck = document.querySelector<HTMLElement>('[data-deck]')!;
+  const slides = [...deck.querySelectorAll<HTMLElement>('[data-slide]')];
+  const last = slides.length - 1;
+  const counter = document.querySelector<HTMLElement>('[data-slide-counter]');
+  const live = document.querySelector<HTMLElement>('[data-slide-live]');
+  const dots = [...document.querySelectorAll<HTMLElement>('[data-dot]')];
+  const tabs = [...document.querySelectorAll<HTMLElement>('[data-tab-section]')];
+  const prevBtn = document.querySelector<HTMLButtonElement>('[data-deck-prev]');
+  const nextBtn = document.querySelector<HTMLButtonElement>('[data-deck-next]');
+  const wide = window.matchMedia('(min-width: 640px)');
+  const behavior: ScrollBehavior = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';
+  const dialogOpen = () => document.querySelector('dialog[open]') !== null;
+
+  counter?.removeAttribute('hidden');
+
+  const canScrollDown = (s: HTMLElement) => s.scrollTop + s.clientHeight < s.scrollHeight - 1;
+  const canScrollUp = (s: HTMLElement) => s.scrollTop > 0;
+
+  let current = -1;
+
+  function goTo(i: number, focus = true) {
+    const target = Math.max(0, Math.min(last, i));
+    deck.scrollTo({ left: target * deck.clientWidth, behavior });
+    if (focus) slides[target].focus({ preventScroll: true });
+  }
+
+  function updateArrows() {
+    if (prevBtn) prevBtn.hidden = !wide.matches || current <= 0;
+    if (nextBtn) nextBtn.hidden = !wide.matches || current >= last;
+  }
+
+  function updateHint(s: HTMLElement) {
+    const hint = s.querySelector<HTMLElement>('.slide__more');
+    if (hint) hint.hidden = s.scrollTop + s.clientHeight >= s.scrollHeight - 8;
+  }
+
+  let announceTimer: number | undefined;
+  function announce(i: number) {
+    clearTimeout(announceTimer);
+    announceTimer = window.setTimeout(() => {
+      if (live) live.textContent = `Slide ${i + 1} of ${slides.length}: ${slides[i].dataset.title ?? ''}`;
+    }, 400);
+  }
+
+  // hash rewriting starts only after any deep link has been honoured
+  let hashReady = false;
+
+  function update() {
+    const i = currentSlideX(deck.scrollLeft, deck.clientWidth, slides.length);
+    if (i === current) return;
+    const first = current === -1;
+    current = i;
+    const slide = slides[i];
+    // slides you've left start at the top next time; never touch the one being read
+    slides.forEach((s, j) => {
+      if (j !== i && s.scrollTop !== 0) s.scrollTop = 0;
+    });
+    if (counter) counter.textContent = counterText(i, slides.length);
+    dots.forEach((d, j) => (j === i ? d.setAttribute('aria-current', 'true') : d.removeAttribute('aria-current')));
+    tabs.forEach((t) =>
+      t.dataset.tabSection === slide.dataset.section ? t.setAttribute('aria-current', 'true') : t.removeAttribute('aria-current'),
+    );
+    updateArrows();
+    updateHint(slide);
+    if (hashReady) history.replaceState(null, '', `#${slide.id}`);
+    if (!first) announce(i);
+  }
+
+  let ticking = false;
+  deck.addEventListener(
+    'scroll',
+    () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        ticking = false;
+        update();
+      });
+    },
+    { passive: true },
+  );
+  slides.forEach((s) => s.addEventListener('scroll', () => updateHint(s), { passive: true }));
+
+  // stay on the same slide when the deck changes size (rotation, mobile browser bars)
+  window.addEventListener('resize', () => {
+    if (current >= 0) deck.scrollTo({ left: current * deck.clientWidth, behavior: 'auto' });
+    updateArrows();
+    slides.forEach(updateHint);
+  });
+  wide.addEventListener('change', updateArrows);
+
+  prevBtn?.addEventListener('click', () => goTo(current - 1));
+  nextBtn?.addEventListener('click', () => goTo(current + 1));
+
+  // dots and tabs are plain anchors (they work without JS); with JS, slide there smoothly instead
+  document.addEventListener('click', (e) => {
+    if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+    const link = (e.target as HTMLElement).closest<HTMLAnchorElement>('a[href^="#slide-"]');
+    if (!link) return;
+    const i = slides.findIndex((s) => `#${s.id}` === link.getAttribute('href'));
+    if (i < 0) return;
+    e.preventDefault();
+    goTo(i);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    const active = document.activeElement as HTMLElement | null;
+    const action = navKey(e, { tag: active?.tagName ?? 'BODY', dialogOpen: dialogOpen() });
+    const slide = slides[current];
+    if (!action) {
+      // ↑/↓ scroll the current slide even when focus is on the page itself rather than the slide
+      const onPage = !active || active === document.body || active === deck;
+      if (onPage && !dialogOpen() && !e.altKey && !e.ctrlKey && !e.metaKey && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+        e.preventDefault();
+        slide.scrollBy({ top: e.key === 'ArrowDown' ? 40 : -40 });
+      }
+      return;
+    }
+    e.preventDefault();
+    if (action === 'next') return goTo(current + 1);
+    if (action === 'prev') return goTo(current - 1);
+    if (action === 'first') return goTo(0);
+    if (action === 'last') return goTo(last);
+    const page = slide.clientHeight * 0.85;
+    if (action === 'page-next') {
+      if (canScrollDown(slide)) slide.scrollBy({ top: page, behavior });
+      else goTo(current + 1);
+    } else {
+      if (canScrollUp(slide)) slide.scrollBy({ top: -page, behavior });
+      else goTo(current - 1);
+    }
+  });
+
+  // vertical wheel: scroll inside the slide; at its edge, a firm push moves one slide
+  let accumulated = 0;
+  let cooldownUntil = 0;
+  deck.addEventListener(
+    'wheel',
+    (e) => {
+      if (dialogOpen() || e.ctrlKey) return;
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return; // sideways trackpad: native snap
+      const slide = slides[current];
+      const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * slide.clientHeight : e.deltaY;
+      const down = canScrollDown(slide);
+      const up = canScrollUp(slide);
+      const now = performance.now();
+      if (now < cooldownUntil) {
+        // swallow momentum at the edge so one flick can't skip several slides; a gesture
+        // that keeps going keeps the cooldown alive until it pauses for 250ms
+        if (!((dy > 0 && down) || (dy < 0 && up))) {
+          e.preventDefault();
+          cooldownUntil = Math.max(cooldownUntil, now + 250);
+        }
+        return;
+      }
+      const step = wheelStep(dy, down, up, accumulated);
+      if (!step.consume) {
+        accumulated = 0;
+        return;
+      }
+      e.preventDefault();
+      accumulated = step.accumulated;
+      if (step.move !== 0) {
+        cooldownUntil = performance.now() + 700;
+        goTo(current + step.move);
+      }
+    },
+    { passive: false },
+  );
+
+  // deep links: #slide-N or a legacy section anchor (#events) open on their slide
+  function slideForHash(hash: string): number {
+    if (!hash || hash === '#') return -1;
+    const el = document.getElementById(decodeURIComponent(hash.slice(1)));
+    const owner = el?.closest<HTMLElement>('[data-slide]');
+    return owner ? slides.indexOf(owner) : -1;
+  }
+  const initial = slideForHash(location.hash);
+  if (initial >= 0) deck.scrollTo({ left: initial * deck.clientWidth, behavior: 'auto' });
+  update();
+  hashReady = true;
+</script>

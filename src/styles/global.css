@@ -129,17 +129,26 @@ html.deck-on body { height: 100%; overflow: hidden; }
 .slide__inner { width: 100%; margin-block: auto; padding-block: 32px 72px; }
 .slide__anchor { position: absolute; top: 0; }
 .slide__more {
+  /* zero-height sticky anchor: the pill floats above the content, so showing or hiding it
+     never changes the slide's scroll height */
   position: sticky;
   bottom: 64px;
   align-self: center;
   flex: none;
+  height: 0;
+  overflow: visible;
+  pointer-events: none;
+}
+.slide__more > span {
+  display: block;
+  translate: 0 -100%;
   font-size: 13px;
   font-weight: 700;
+  white-space: nowrap;
   background: var(--card);
   border: var(--border);
   border-radius: 999px;
   padding: 3px 12px;
-  pointer-events: none;
 }
 .slide__more[hidden] { display: none; }
 .slide--lavender { background: var(--tone-lavender); }

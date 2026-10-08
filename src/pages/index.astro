@@ -1,6 +1,7 @@
 ---
 import ActivityCard from '../components/ActivityCard.astro';
 import ContactCard from '../components/ContactCard.astro';
+import Deck from '../components/Deck.astro';
 import EducationList from '../components/EducationList.astro';
 import EventGrid from '../components/EventGrid.astro';
 import HighlightCard from '../components/HighlightCard.astro';
@@ -29,20 +30,21 @@ const [eventsSlide, videosSlide, beyondSlide, contactSlide] = rest.slice(profile
 ---
 
 <Base title={title} description={description}>
-  <Slide {...profileSlide} hideHeader>
-    <ProfileHeader
-      name={profile.name}
-      headline={profile.headline}
-      bio={profile.bio}
-      skills={profile.skills}
-      avatar={profile.avatar}
-      stats={profile.stats}
-      cvUrl={profile.contact.cv}
-    />
-  </Slide>
   <TabBar sections={SECTIONS} firstSlide={SECTION_FIRST_SLIDE} total={SLIDES.length} />
 
-  <main>
+  <Deck>
+    <Slide {...profileSlide} hideHeader>
+      <ProfileHeader
+        name={profile.name}
+        headline={profile.headline}
+        bio={profile.bio}
+        skills={profile.skills}
+        avatar={profile.avatar}
+        stats={profile.stats}
+        cvUrl={profile.contact.cv}
+      />
+    </Slide>
+
     <Slide {...careersSlide}>
       <HighlightCard {...profile.highlight} />
     </Slide>
@@ -60,7 +62,9 @@ const [eventsSlide, videosSlide, beyondSlide, contactSlide] = rest.slice(profile
     ))}
 
     <Slide {...eventsSlide}>
-      <EventGrid events={profile.events} />
+      <div class="events-4">
+        <EventGrid events={profile.events} />
+      </div>
     </Slide>
 
     <Slide {...videosSlide}>
@@ -78,7 +82,7 @@ const [eventsSlide, videosSlide, beyondSlide, contactSlide] = rest.slice(profile
     </Slide>
 
     <Slide {...beyondSlide}>
-      <div class="grid grid--3">
+      <div class="grid grid--4">
         {profile.activities.map((activity) => <ActivityCard activity={activity} />)}
         <EducationList items={profile.education} />
       </div>
@@ -87,7 +91,7 @@ const [eventsSlide, videosSlide, beyondSlide, contactSlide] = rest.slice(profile
     <Slide {...contactSlide}>
       <ContactCard contact={profile.contact} />
     </Slide>
-  </main>
+  </Deck>
 
   <SlideNav slides={SLIDES} />
   <Lightbox />
@@ -101,12 +105,17 @@ const [eventsSlide, videosSlide, beyondSlide, contactSlide] = rest.slice(profile
     grid-template-columns: minmax(0, 1fr);
     gap: 18px;
   }
+  /* spec §4: 1 column on phones, 2 on tablets, 3-4 on desktops */
   @media (min-width: 640px) {
     .grid--4, .grid--3 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   }
-  @media (min-width: 960px) {
+  @media (min-width: 960px) and (max-width: 1199px) {
+    .events-4 :global(.events) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  }
+  @media (min-width: 1200px) {
     .grid--4 { grid-template-columns: repeat(4, minmax(0, 1fr)); }
     .grid--3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .events-4 :global(.events) { grid-template-columns: repeat(4, minmax(0, 1fr)); }
   }
   .grid--photos { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 640px; }
   .subhead { font-size: 20px; margin: 32px 0 14px; }

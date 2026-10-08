@@ -13,9 +13,10 @@ try {
   }
   await page.addStyleTag({
     content: `
-      body > *:not(.profile) { display: none !important; }
-      body { display: grid; place-items: center; height: 630px; overflow: hidden; }
-      .profile { padding: 0 48px; }
+      /* only the profile slide, full-bleed, without deck chrome */
+      .tabbar, .slidenav, .deck__arrow, .slide__more, .deck > :not(#slide-1) { display: none !important; }
+      .deck { margin: 0 !important; height: 630px !important; }
+      .profile { padding: 0 48px !important; }
       .profile__actions { display: none !important; }
     `,
   });

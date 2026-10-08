@@ -20,6 +20,7 @@ describe('Slide', () => {
     const html = await render(Slide, { ...SLIDES[3] }, { default: '<p>x</p>' });
     expect(html).toMatch(/<section[^>]*tabindex="-1"/);
     expect(html).toMatch(/<span[^>]*class="slide__more"[^>]*aria-hidden="true"[^>]*hidden/);
+    expect(html).toMatch(/class="slide__more"[^>]*>\s*<span[^>]*>↓ more<\/span>/);
   });
 
   it('hides the header for the profile slide and labels it instead', async () => {
