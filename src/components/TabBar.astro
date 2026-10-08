@@ -1,17 +1,25 @@
 ---
+import type { SectionId } from '../data/slides';
+
 interface Props {
-  sections: readonly { id: string; label: string }[];
+  sections: readonly { id: SectionId; label: string }[];
+  firstSlide: Record<SectionId, string>;
+  total: number;
 }
 
-const { sections } = Astro.props;
+const { sections, firstSlide, total } = Astro.props;
 ---
 
 <nav class="tabbar" aria-label="Sections">
-  <ul class="tabbar__list container">
-    {sections.map((s) => (
-      <li><a class="tabbar__tab" href={`#${s.id}`} data-tab={s.id}>{s.label}</a></li>
-    ))}
-  </ul>
+  <div class="tabbar__row container">
+    <ul class="tabbar__list">
+      {sections.map((s) => (
+        <li><a class="tabbar__tab" href={`#${firstSlide[s.id]}`} data-tab-section={s.id}>{s.label}</a></li>
+      ))}
+    </ul>
+    <!-- shown by SlideNav's script; meaningless without it -->
+    <span class="tabbar__counter" data-slide-counter aria-live="polite" hidden>01 / {total}</span>
+  </div>
 </nav>
 
 <style>
@@ -23,12 +31,19 @@ const { sections } = Astro.props;
     backdrop-filter: blur(8px);
     border-bottom: 2px solid var(--ink);
   }
+  .tabbar__row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
   .tabbar__list {
+    flex: 1;
+    min-width: 0;
     display: flex;
     gap: 8px;
     list-style: none;
-    margin-block: 0;
-    padding-block: 10px;
+    margin: 0;
+    padding: 10px 0;
     overflow-x: auto;
     scrollbar-width: none;
   }
@@ -48,58 +63,14 @@ const { sections } = Astro.props;
     background: var(--ink);
     color: #fff;
   }
+  .tabbar__counter {
+    flex: none;
+    font-weight: 700;
+    font-size: 14px;
+    font-variant-numeric: tabular-nums;
+    padding: 6px 12px;
+    border: var(--border);
+    border-radius: 999px;
+    background: var(--yellow);
+  }
 </style>
-
-<script>
-  const tabs = new Map(
-    [...document.querySelectorAll<HTMLAnchorElement>('[data-tab]')].map((a) => [a.dataset.tab!, a]),
-  );
-  const visible = new Set<string>();
-
-  const ids = [...tabs.keys()];
-  const atBottom = () => window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
-
-  let shown: string | undefined;
-
-  function update() {
-    // the first on-screen section in document order wins; at the very bottom the
-    // last section can never reach the observer's band, so it wins outright
-    const current = atBottom() ? ids[ids.length - 1] : ids.find((id) => visible.has(id));
-    if (current === shown) return;
-    shown = current;
-    for (const [id, a] of tabs) {
-      if (id === current) {
-        a.setAttribute('aria-current', 'true');
-        a.parentElement?.parentElement?.scrollTo({ left: a.offsetLeft - 16, behavior: 'smooth' });
-      } else {
-        a.removeAttribute('aria-current');
-      }
-    }
-  }
-
-  const observer = new IntersectionObserver(
-    (entries) => {
-      for (const e of entries) {
-        if (e.isIntersecting) visible.add(e.target.id);
-        else visible.delete(e.target.id);
-      }
-      update();
-    },
-    { rootMargin: '-80px 0px -55% 0px' },
-  );
-
-  for (const id of ids) {
-    const el = document.getElementById(id);
-    if (el) observer.observe(el);
-  }
-
-  let ticking = false;
-  window.addEventListener('scroll', () => {
-    if (ticking) return;
-    ticking = true;
-    requestAnimationFrame(() => {
-      ticking = false;
-      update();
-    });
-  }, { passive: true });
-</script>

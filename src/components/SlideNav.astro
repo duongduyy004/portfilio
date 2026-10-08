@@ -1,0 +1,134 @@
+---
+interface Props {
+  slides: { n: number; id: string; title: string }[];
+}
+
+const { slides } = Astro.props;
+---
+
+<!-- shown by the script below; without JS the slides still snap and the tabs still work -->
+<nav class="slidenav" aria-label="Slides" hidden>
+  <ul>
+    {slides.map((s) => (
+      <li>
+        <a href={`#${s.id}`} class="slidenav__dot" data-dot={s.n}><span class="slidenav__label">{s.title}</span></a>
+      </li>
+    ))}
+  </ul>
+</nav>
+
+<style>
+  .slidenav {
+    position: fixed;
+    right: 18px;
+    top: 50%;
+    translate: 0 -50%;
+    z-index: 9;
+  }
+  .slidenav ul { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .slidenav__dot {
+    position: relative;
+    display: block;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--card);
+    border: var(--border);
+  }
+  .slidenav__dot[aria-current="true"] { background: var(--ink); }
+  .slidenav__label {
+    position: absolute;
+    right: calc(100% + 10px);
+    top: 50%;
+    translate: 0 -50%;
+    white-space: nowrap;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink);
+    background: var(--card);
+    border: var(--border);
+    border-radius: 999px;
+    padding: 2px 10px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .15s;
+  }
+  .slidenav__dot:hover .slidenav__label,
+  .slidenav__dot:focus-visible .slidenav__label { opacity: 1; }
+  @media (max-width: 899px) {
+    .slidenav { display: none; }
+  }
+</style>
+
+<script>
+  import { counterText, currentSlide, navKey, stepTarget } from '../lib/slidenav';
+
+  const slides = [...document.querySelectorAll<HTMLElement>('[data-slide]')];
+  const counter = document.querySelector<HTMLElement>('[data-slide-counter]');
+  const rail = document.querySelector<HTMLElement>('.slidenav');
+  const dots = [...document.querySelectorAll<HTMLElement>('[data-dot]')];
+  const tabs = [...document.querySelectorAll<HTMLElement>('[data-tab-section]')];
+  const tabbar = document.querySelector<HTMLElement>('.tabbar');
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const behavior: ScrollBehavior = reduce ? 'auto' : 'smooth';
+
+  counter?.removeAttribute('hidden');
+  rail?.removeAttribute('hidden');
+
+  const tabbarH = () => tabbar?.offsetHeight ?? 0;
+  const atBottom = () => window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 2;
+  const index = () => currentSlide(slides.map((s) => s.getBoundingClientRect().top), window.innerHeight, atBottom());
+
+  // don't rewrite the hash while the browser is still landing on a deep link
+  let hashReady = false;
+  const readyAt = performance.now() + 500;
+  window.addEventListener('wheel', () => (hashReady = true), { once: true, passive: true });
+  window.addEventListener('touchmove', () => (hashReady = true), { once: true, passive: true });
+  window.addEventListener('keydown', () => (hashReady = true), { once: true });
+
+  let shown = -1;
+  function update() {
+    const i = index();
+    if (i === shown) return;
+    shown = i;
+    const slide = slides[i];
+    if (counter) counter.textContent = counterText(i, slides.length);
+    dots.forEach((d, j) => (j === i ? d.setAttribute('aria-current', 'true') : d.removeAttribute('aria-current')));
+    tabs.forEach((t) =>
+      t.dataset.tabSection === slide.dataset.section ? t.setAttribute('aria-current', 'true') : t.removeAttribute('aria-current'),
+    );
+    if (hashReady || performance.now() > readyAt) history.replaceState(null, '', `#${slide.id}`);
+  }
+
+  let ticking = false;
+  const schedule = () => {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(() => {
+      ticking = false;
+      update();
+    });
+  };
+  window.addEventListener('scroll', schedule, { passive: true });
+  window.addEventListener('resize', schedule);
+  update();
+
+  const goTo = (i: number) => slides[i].scrollIntoView({ behavior, block: 'start' });
+
+  document.addEventListener('keydown', (e) => {
+    const active = document.activeElement as HTMLElement | null;
+    const action = navKey(e, {
+      tag: active?.tagName ?? 'BODY',
+      dialogOpen: document.querySelector('dialog[open]') !== null,
+    });
+    if (!action) return;
+    e.preventDefault();
+    const i = index();
+    if (action === 'first') return goTo(0);
+    if (action === 'last') return goTo(slides.length - 1);
+    const rect = slides[i].getBoundingClientRect();
+    const target = stepTarget(action, { top: rect.top, bottom: rect.bottom }, window.innerHeight, tabbarH(), i, slides.length);
+    if ('scrollBy' in target) window.scrollBy({ top: target.scrollBy, behavior });
+    else goTo(target.goTo);
+  });
+</script>

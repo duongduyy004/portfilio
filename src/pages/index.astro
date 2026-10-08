@@ -16,6 +16,7 @@ import VideoModal from '../components/VideoModal.astro';
 import ZoomImage from '../components/ZoomImage.astro';
 import Base from '../layouts/Base.astro';
 import { profile } from '../data/profile';
+import { SECTION_FIRST_SLIDE, SLIDES } from '../data/slides';
 import { SECTIONS } from '../data/types';
 
 const title = `${profile.name} — ${profile.headline}`;
@@ -46,7 +47,7 @@ const section = (id: (typeof SECTIONS)[number]['id']) => ({
     stats={profile.stats}
     cvUrl={profile.contact.cv}
   />
-  <TabBar sections={SECTIONS} />
+  <TabBar sections={SECTIONS} firstSlide={SECTION_FIRST_SLIDE} total={SLIDES.length} />
 
   <main>
     <Section {...section('top-posts')}>

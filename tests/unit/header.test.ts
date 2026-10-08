@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import ProfileHeader from '../../src/components/ProfileHeader.astro';
-import Section from '../../src/components/Section.astro';
 import TabBar from '../../src/components/TabBar.astro';
 import { profile } from '../../src/data/profile';
+import { SECTION_FIRST_SLIDE } from '../../src/data/slides';
 import { SECTIONS } from '../../src/data/types';
 import { formatStat, parseStat } from '../../src/lib/stat';
 import { render } from './render';
@@ -48,19 +48,10 @@ describe('ProfileHeader', () => {
 });
 
 describe('TabBar', () => {
-  it('links every section in order', async () => {
-    const html = await render(TabBar, { sections: SECTIONS });
+  it('links each section to its first slide and shows the counter', async () => {
+    const html = await render(TabBar, { sections: SECTIONS, firstSlide: SECTION_FIRST_SLIDE, total: 10 });
     const hrefs = [...html.matchAll(/href="#([^"]+)"/g)].map((m) => m[1]);
-    expect(hrefs).toEqual(SECTIONS.map((s) => s.id));
-  });
-});
-
-describe('Section', () => {
-  it('labels the section by its heading', async () => {
-    const html = await render(Section, { id: 'events', title: 'Events', icon: '🎉' }, { default: '<p>x</p>' });
-    expect(html).toContain('id="events"');
-    const labelledby = /aria-labelledby="([^"]+)"/.exec(html)![1];
-    expect(html).toMatch(new RegExp(`<h2[^>]*id="${labelledby}"`));
-    expect(html).toContain('<p>x</p>');
+    expect(hrefs).toEqual(['slide-2', 'slide-4', 'slide-7', 'slide-8', 'slide-9', 'slide-10']);
+    expect(html).toMatch(/data-slide-counter[^>]*>01 \/ 10</);
   });
 });
