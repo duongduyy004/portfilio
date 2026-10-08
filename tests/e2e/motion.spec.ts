@@ -88,3 +88,82 @@ test.describe('odometer stats', () => {
     });
   });
 });
+
+test.describe('tilt and magnet', () => {
+  const desktop = (page: Page) => page.viewportSize()!.width >= 900;
+
+  test('cards tilt toward the pointer', async ({ page }) => {
+    test.skip(!desktop(page), 'fine pointers only');
+    await page.goto('/');
+    await goSlide(page, 3);
+    const card = page.locator('#slide-3 [data-tilt]').first();
+    await expect(card).toBeAttached();
+    const box = (await card.boundingBox())!;
+    await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.5);
+    await page.mouse.move(box.x + box.width * 0.9, box.y + box.height * 0.1, { steps: 4 });
+    await expect(card).toHaveClass(/is-tilting/);
+    expect(await card.evaluate((e) => getComputedStyle(e).transform)).not.toBe('none');
+    await page.mouse.move(5, box.y + box.height + 200);
+    await expect(card).not.toHaveClass(/is-tilting/);
+  });
+
+  test('no tilt on touch screens', async ({ page }) => {
+    test.skip(desktop(page), 'touch only');
+    await page.goto('/');
+    await goSlide(page, 3);
+    const card = page.locator('#slide-3 [data-tilt]').first();
+    await expect(card).toBeAttached();
+    const box = (await card.boundingBox())!;
+    await page.mouse.move(box.x + 20, box.y + 20);
+    await page.mouse.move(box.x + 60, box.y + 40, { steps: 3 });
+    await expect(card).not.toHaveClass(/is-tilting/);
+  });
+
+  test('arrows are magnetic', async ({ page }) => {
+    test.skip(!desktop(page), 'fine pointers only');
+    await page.goto('/');
+    const next = page.locator('[data-deck-next]');
+    const b = (await next.boundingBox())!;
+    const cx = b.x + b.width / 2;
+    const cy = b.y + b.height / 2;
+    await page.mouse.move(cx - 40, cy, { steps: 3 });
+    await expect
+      .poll(async () => {
+        const t = await next.evaluate((e) => getComputedStyle(e).translate);
+        return parseFloat(t);
+      })
+      .toBeLessThan(0);
+    const x = parseFloat(await next.evaluate((e) => getComputedStyle(e).translate));
+    expect(Math.abs(x)).toBeLessThanOrEqual(6);
+    await page.mouse.move(cx - 400, cy, { steps: 3 });
+    await expect.poll(() => next.evaluate((e) => getComputedStyle(e).translate)).toMatch(/^(none|0px)$/);
+  });
+
+  test('clicking a tilted video poster opens the modal', async ({ page }) => {
+    test.skip(!desktop(page), 'fine pointers only');
+    await page.goto('/');
+    await goSlide(page, 8);
+    const poster = page.locator('#slide-8 a[data-video-modal][href="/video/dance.mp4"]');
+    const box = (await poster.boundingBox())!;
+    await page.mouse.move(box.x + box.width * 0.2, box.y + box.height * 0.2);
+    await page.mouse.move(box.x + box.width * 0.8, box.y + box.height * 0.3, { steps: 4 });
+    await page.mouse.click(box.x + box.width * 0.5, box.y + box.height * 0.5);
+    await expect(page.locator('dialog#video-modal')).toHaveAttribute('open', '');
+  });
+
+  test.describe('reduced motion', () => {
+    test.use({ reducedMotion: 'reduce' });
+    test('no tilt', async ({ page }) => {
+      test.skip(!desktop(page), 'fine pointers only');
+      await page.goto('/');
+      await goSlide(page, 3);
+      const card = page.locator('#slide-3 [data-tilt]').first();
+      await expect(card).toBeAttached();
+    await expect(card).toBeAttached();
+      const box = (await card.boundingBox())!;
+      await page.mouse.move(box.x + 10, box.y + 10);
+      await page.mouse.move(box.x + box.width - 10, box.y + 10, { steps: 4 });
+      await expect(card).not.toHaveClass(/is-tilting/);
+    });
+  });
+});

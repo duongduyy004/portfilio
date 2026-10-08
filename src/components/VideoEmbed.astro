@@ -24,7 +24,7 @@ const modalData = {
 const platform = { youtube: 'YouTube', tiktok: 'TikTok', link: 'link', file: '' }[video.kind];
 ---
 
-<article class="video card" data-reveal="drop">
+<article class="video card" data-reveal="drop" data-tilt>
   <div class="video__media">
     {video.kind === 'file' ? (
       <a class="video__poster" href={video.src} {...modalData} data-poster={posterSrc} aria-label={`Play ${video.title}`}>

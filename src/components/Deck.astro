@@ -1,15 +1,15 @@
 <main class="deck" data-deck>
   <slot />
   <!-- shown by SlideNav's script on ≥640px screens -->
-  <button type="button" class="deck__arrow deck__arrow--prev" data-deck-prev aria-label="Previous slide" hidden>‹</button>
-  <button type="button" class="deck__arrow deck__arrow--next" data-deck-next aria-label="Next slide" hidden>›</button>
+  <button type="button" class="deck__arrow deck__arrow--prev" data-deck-prev data-magnet aria-label="Previous slide" hidden>‹</button>
+  <button type="button" class="deck__arrow deck__arrow--next" data-deck-next data-magnet aria-label="Next slide" hidden>›</button>
 </main>
 
 <style>
   .deck__arrow {
     position: fixed;
     top: calc(var(--tabbar-h) + (100dvh - var(--tabbar-h)) / 2);
-    translate: 0 -50%;
+    margin-top: -24px; /* centre without translate, which the magnet effect owns */
     z-index: 9;
     display: grid;
     place-items: center;

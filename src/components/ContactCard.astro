@@ -9,12 +9,12 @@ const { contact } = Astro.props;
 const tel = `+84${contact.phone.replace(/\D/g, '').replace(/^0/, '')}`;
 ---
 
-<article class="contact card" data-reveal="drop">
+<article class="contact card" data-reveal="drop" data-tilt="2">
   <h3 class="contact__title">Let's work together ✨</h3>
   <p class="contact__lead">Open to Employer Branding and Internal Communication roles. The fastest way to reach me is email.</p>
   <ul class="contact__links">
-    <li><a class="btn btn--primary" href={`mailto:${contact.email}`}>✉️ {contact.email}</a></li>
-    <li><a class="btn" href={`tel:${tel}`}>📞 {contact.phone}</a></li>
+    <li><a class="btn btn--primary" data-magnet href={`mailto:${contact.email}`}>✉️ {contact.email}</a></li>
+    <li><a class="btn" data-magnet href={`tel:${tel}`}>📞 {contact.phone}</a></li>
     {contact.cv && <li><a class="btn" href={contact.cv} download>📄 Download CV</a></li>}
   </ul>
 </article>

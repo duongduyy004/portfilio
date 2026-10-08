@@ -11,7 +11,7 @@ const { events } = Astro.props;
 
 <ul class="events">
   {events.map((e) => (
-    <li class="event card" data-reveal="drop">
+    <li class="event card" data-reveal="drop" data-tilt>
       <ZoomImage
         class="event__photo"
         photo={e.photo}

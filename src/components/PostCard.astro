@@ -23,7 +23,7 @@ const linkProps = link.href
   : {};
 ---
 
-<Tag class="post card" data-reveal="drop" {...linkProps}>
+<Tag class="post card" data-reveal="drop" data-tilt {...linkProps}>
   <div class:list={['post__media', !post.image && tone]}>
     {post.image ? (
       <Image src={post.image.src} alt={post.image.alt} widths={[320, 640]} sizes="(min-width: 960px) 260px, (min-width: 640px) 45vw, 90vw" />

@@ -16,3 +16,25 @@
 @keyframes word-in {
   to { opacity: 1; filter: none; translate: 0 0; }
 }
+
+/* ---------- 3.3 card tilt + shine (classes set by Motion.astro; fine pointers only) ---------- */
+@media (prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) {
+  [data-tilt] { position: relative; transition: transform 0.3s ease; }
+  /* !important: replaces the cards' own hover lift while tilting */
+  [data-tilt].is-tilting {
+    transform: perspective(900px) rotateX(calc(var(--rx, 0) * 1deg)) rotateY(calc(var(--ry, 0) * 1deg)) !important;
+    transition: transform 0.08s linear;
+  }
+  [data-tilt].is-tilting::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    background: radial-gradient(circle at var(--gx, 50%) var(--gy, 50%), rgb(255 255 255 / 0.35), transparent 55%);
+    z-index: 2;
+  }
+
+  /* ---------- 3.4 magnetic controls ---------- */
+  [data-magnet] { transition: translate 0.25s ease; }
+}

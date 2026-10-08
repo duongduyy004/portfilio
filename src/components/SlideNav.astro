@@ -11,7 +11,7 @@ const { slides } = Astro.props;
   <ol>
     {slides.map((s) => (
       <li>
-        <a href={`#${s.id}`} class="slidenav__dot" data-dot={s.n}><span class="slidenav__label">{s.title}</span></a>
+        <a href={`#${s.id}`} class="slidenav__dot" data-dot={s.n} data-magnet><span class="slidenav__label">{s.title}</span></a>
       </li>
     ))}
   </ol>
