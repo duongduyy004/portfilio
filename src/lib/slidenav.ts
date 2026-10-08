@@ -43,7 +43,10 @@ export function navKey(e: KeyLike, focus: { tag: string; dialogOpen: boolean }):
   }
 }
 
-/** For next/prev: scroll within the current slide if it overflows that way, else go to a neighbouring slide. */
+/**
+ * For next/prev: scroll within the current slide if it overflows that way (never further than the
+ * overflow, so no content is skipped), else go to a neighbouring slide.
+ */
 export function stepTarget(
   action: 'next' | 'prev',
   slide: { top: number; bottom: number },
@@ -54,10 +57,10 @@ export function stepTarget(
 ): { scrollBy: number } | { goTo: number } {
   const step = viewportH - tabbarH;
   if (action === 'next') {
-    if (slide.bottom > viewportH + 1) return { scrollBy: step };
+    if (slide.bottom > viewportH + 1) return { scrollBy: Math.min(step, slide.bottom - viewportH) };
     return { goTo: Math.min(index + 1, count - 1) };
   }
-  if (slide.top < tabbarH - 1) return { scrollBy: -step };
+  if (slide.top < tabbarH - 1) return { scrollBy: -Math.min(step, tabbarH - slide.top) };
   return { goTo: Math.max(index - 1, 0) };
 }
 

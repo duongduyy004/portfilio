@@ -65,6 +65,7 @@ const { slides } = Astro.props;
 
   const slides = [...document.querySelectorAll<HTMLElement>('[data-slide]')];
   const counter = document.querySelector<HTMLElement>('[data-slide-counter]');
+  const live = document.querySelector<HTMLElement>('[data-slide-live]');
   const rail = document.querySelector<HTMLElement>('.slidenav');
   const dots = [...document.querySelectorAll<HTMLElement>('[data-dot]')];
   const tabs = [...document.querySelectorAll<HTMLElement>('[data-tab-section]')];
@@ -86,6 +87,14 @@ const { slides } = Astro.props;
   window.addEventListener('touchmove', () => (hashReady = true), { once: true, passive: true });
   window.addEventListener('keydown', () => (hashReady = true), { once: true });
 
+  let announceTimer: number | undefined;
+  function announce(i: number) {
+    clearTimeout(announceTimer);
+    announceTimer = window.setTimeout(() => {
+      if (live) live.textContent = `Slide ${i + 1} of ${slides.length}: ${slides[i].dataset.title ?? ''}`;
+    }, 400);
+  }
+
   let shown = -1;
   function update() {
     const i = index();
@@ -93,6 +102,7 @@ const { slides } = Astro.props;
     shown = i;
     const slide = slides[i];
     if (counter) counter.textContent = counterText(i, slides.length);
+    if (hashReady) announce(i);
     dots.forEach((d, j) => (j === i ? d.setAttribute('aria-current', 'true') : d.removeAttribute('aria-current')));
     tabs.forEach((t) =>
       t.dataset.tabSection === slide.dataset.section ? t.setAttribute('aria-current', 'true') : t.removeAttribute('aria-current'),

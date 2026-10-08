@@ -53,7 +53,11 @@ describe('stepTarget', () => {
   const vh = 800;
   const bar = 60;
   it('scrolls within a slide whose bottom is below the viewport', () => {
-    expect(stepTarget('next', { top: 60, bottom: 1500 }, vh, bar, 3, 10)).toEqual({ scrollBy: 740 });
+    expect(stepTarget('next', { top: 60, bottom: 2000 }, vh, bar, 3, 10)).toEqual({ scrollBy: 740 });
+  });
+  it('scrolls only as far as the remaining content, so nothing is skipped', () => {
+    // 300px of the slide is below the viewport: show exactly that, don't overshoot into the next slide
+    expect(stepTarget('next', { top: 60, bottom: 1100 }, vh, bar, 3, 10)).toEqual({ scrollBy: 300 });
   });
   it('goes to the next slide when the current one fits', () => {
     expect(stepTarget('next', { top: 60, bottom: 790 }, vh, bar, 3, 10)).toEqual({ goTo: 4 });
@@ -62,7 +66,10 @@ describe('stepTarget', () => {
     expect(stepTarget('next', { top: 60, bottom: 790 }, vh, bar, 9, 10)).toEqual({ goTo: 9 });
   });
   it('scrolls back within a slide whose top is above the snap line', () => {
-    expect(stepTarget('prev', { top: -500, bottom: 700 }, vh, bar, 3, 10)).toEqual({ scrollBy: -740 });
+    expect(stepTarget('prev', { top: -1000, bottom: 700 }, vh, bar, 3, 10)).toEqual({ scrollBy: -740 });
+  });
+  it('scrolls back only as far as the slide top', () => {
+    expect(stepTarget('prev', { top: -200, bottom: 700 }, vh, bar, 3, 10)).toEqual({ scrollBy: -260 });
   });
   it('goes to the previous slide when the top is at the snap line', () => {
     expect(stepTarget('prev', { top: 60, bottom: 790 }, vh, bar, 3, 10)).toEqual({ goTo: 2 });

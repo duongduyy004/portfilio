@@ -18,7 +18,9 @@ const { sections, firstSlide, total } = Astro.props;
       ))}
     </ul>
     <!-- shown by SlideNav's script; meaningless without it -->
-    <span class="tabbar__counter" data-slide-counter aria-live="polite" hidden>01 / {total}</span>
+    <span class="tabbar__counter" data-slide-counter hidden>01 / {total}</span>
+    <!-- announced only once scrolling settles (see SlideNav), so passing slides don't chatter -->
+    <span class="sr-only" data-slide-live aria-live="polite"></span>
   </div>
 </nav>
 

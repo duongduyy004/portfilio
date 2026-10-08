@@ -75,6 +75,21 @@ test('dot click jumps to its slide', async ({ page }) => {
   await expect(page.locator('[data-dot="7"]')).toHaveAttribute('aria-current', 'true');
 });
 
+test('screen readers hear the slide once scrolling settles, not every slide passed', async ({ page }) => {
+  await page.goto('/');
+  const live = page.locator('[aria-live]');
+  await expect(live).toHaveCount(1);
+  await page.evaluate(() => {
+    const el = document.querySelector('[aria-live]')!;
+    (window as any).__liveChanges = 0;
+    new MutationObserver(() => (window as any).__liveChanges++).observe(el, { childList: true, characterData: true, subtree: true });
+  });
+  await page.keyboard.press('End');
+  await expect(counter(page)).toHaveText('10 / 10');
+  await expect(live).toHaveText('Slide 10 of 10: Contact');
+  expect(await page.evaluate(() => (window as any).__liveChanges)).toBeLessThanOrEqual(2);
+});
+
 test('deep link to a slide', async ({ page }) => {
   await page.goto('/#slide-4');
   await expect(counter(page)).toHaveText('04 / 10');
