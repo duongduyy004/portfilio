@@ -1,220 +1,188 @@
-# Slideshow Layout Implementation Plan
+# Horizontal Slide Deck Implementation Plan (v2)
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Recompose the one-page portfolio into 10 full-screen, colour-toned slides that snap gently on scroll, with a slide counter, a desktop dot rail and keyboard navigation.
+**Goal:** Rework the `feat/slideshow` branch from vertical snapping slides into a horizontal, full-screen, responsive slide deck.
 
-**Architecture:** Native CSS scroll-snap (`y proximity`) on the document. `src/data/slides.ts` is the single source for slide order, titles, tones and section mapping. `Slide.astro` replaces `Section.astro`. One `SlideNav.astro` script tracks the current slide and handles keys, using pure helpers in `src/lib/slidenav.ts` so the logic is unit-testable. The existing content components are reused unchanged.
+**Architecture:** One horizontal scroll-snap container (`Deck`) below a fixed tab bar holds 10 full-deck `Slide` panels, each scrolling vertically inside itself. A single `SlideNav` script maps keys and the wheel to slide moves, drives the counter, dots, arrows, tabs, hash and live region, and handles deep links. Its decisions come from pure helpers in `src/lib/slidenav.ts`.
 
-**Tech Stack:** Astro 7, TypeScript, Vitest + Astro Container API, Playwright (port 4322 preview).
+**Tech Stack:** Astro 7, TypeScript, Vitest + Astro Container API, Playwright (preview on port 4322).
 
-**Spec:** `docs/superpowers/specs/2026-10-08-slideshow-design.md` (builds on `docs/superpowers/specs/2026-10-08-portfolio-design.md`)
+**Spec:** `docs/superpowers/specs/2026-10-08-slideshow-design.md` (v2)
 
 ## Global Constraints
 
-- Slide order, ids, titles, icons, sections and tones are exactly spec §3. Tone hex values: lavender `#F3EFFF`, yellow `#FFE45C`, mint `#3DDCB0`, pink `#FF7AB6`, lilac `#CBBEFF`.
-- Text directly on a tone is `--ink`. `--muted` text appears only inside white cards.
-- `html { scroll-snap-type: y proximity; scroll-padding-top: var(--tabbar-h) }`, `.slide { scroll-snap-align: start; min-height: calc(100dvh - var(--tabbar-h)) }`.
-- Counter format `NN / 10`, zero-padded. Dot rail only at `min-width: 900px`.
-- URL updates use `history.replaceState` only, never `pushState`.
-- Programmatic scrolls use `behavior: 'auto'` under `prefers-reduced-motion: reduce`, otherwise `'smooth'`.
-- With JS off, the counter and dot rail are not visible. Everything else works.
-- `profile.ts` and the content components (`ProfileHeader`, `HighlightCard`, `PostCard`, `RoleCard`, `EventGrid`, `VideoEmbed`, `ActivityCard`, `EducationList`, `ContactCard`, `Lightbox`, `VideoModal`, `Reveal`) are not modified.
-- Legacy anchors `#top-posts #experience #events #videos #beyond-work #contact` must keep landing on their section's first slide.
+- Deck: `height: calc(100dvh - var(--tabbar-h))`, `scroll-snap-type: x mandatory`. Slide: `flex: 0 0 100%`, `scroll-snap-stop: always`, `overflow-y: auto`, `overscroll-behavior-y: contain`, `tabindex="-1"`.
+- The tab bar box height equals `--tabbar-h` exactly (60px).
+- While JS runs, `html, body { height: 100%; overflow: hidden }` via a class on `<html>` (`deck-on`) set by the inline head script. Without JS the page keeps its normal overflow and the deck scrollbar stays visible.
+- Grids per spec §4: posts 4/2/1, events 4/2/1, videos 3/2/1, Beyond Work 4/2/1 at ≥1200 / 640–1199 / <640.
+- Dots at the bottom on all sizes; arrows only at ≥ 640px; the previous arrow is hidden on slide 1 and the next on slide 10.
+- Wheel: threshold 50 (normalised px), cooldown 700ms. The live announcement is debounced 400ms. History uses `replaceState` only.
+- `behavior: 'auto'` under reduced motion, otherwise `'smooth'`.
+- `slides.ts`, `profile.ts` and the content components are unchanged.
 - Each commit ends with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
 
 ## Review Focus
 
-1. **Expanding a role story on a phone** grows slide 4 past the screen. The reader must stay where they are, with no snap jump to slide 5. Pinned by e2e `expanding a story does not jump slides` (Task 5).
-2. **Space on a focused `<summary>` or button** must toggle or activate it, not change the slide. Pinned by e2e `space on a summary toggles it` (Task 5).
-3. **Arrow keys while the photo viewer is open** must not move slides behind the dialog. Pinned by e2e `keys do nothing while the lightbox is open` (Task 5).
-4. **Browser Back after scrolling through slides** must leave the site or return to the previous page, not step through slides. Pinned by e2e `scrolling adds no history entries` (Task 5).
-5. **Loading a legacy anchor (`/#events`)** must land on slide 7 and stay there. The hash-tracking script must not yank it elsewhere on load. Pinned by e2e `legacy anchors land on their slide` (Task 5).
+1. **Clicking content on another slide** (e.g. Playwright or a tab jump straight to a card on slide 8): the "reset inner scroll" rule must not yank the slide the visitor just arrived on. Rule: on a slide change, reset `scrollTop` of every slide **except** the current one. Pinned by e2e `arriving does not reset the current slide mid-read` (Task 4).
+2. **Trackpad momentum at a slide's edge:** a long inertial scroll must move at most one slide. Pinned by e2e `a long wheel burst moves one slide` (Task 4).
+3. **Wheel over an open pop-up** must not move the deck. Pinned by e2e `wheel does nothing while a pop-up is open` (Task 4).
+4. **Phone browser bar resizing (`dvh` change) or a rotation** mid-deck: the deck must stay on the same slide. The script re-snaps to the current index on `resize`. Pinned by e2e `resizing keeps the current slide` (Task 4).
+5. **Expanding a role story** inside a slide must not move to another slide or reset the scroll. Pinned by e2e `expanding a story keeps the slide and position` (Task 4).
 
 ---
 
-### Task 1: Slide data
+### Task 1: Navigation helpers v2
 
 **Files:**
-- Create: `src/data/slides.ts`, `tests/unit/slides.test.ts`
-
-**Interfaces:**
-- Consumes: `SECTIONS` from `src/data/types.ts` (ids `top-posts | experience | events | videos | beyond-work | contact`).
-- Produces:
-```ts
-export type Tone = 'lavender' | 'yellow' | 'mint' | 'pink' | 'lilac';
-export type SectionId = (typeof SECTIONS)[number]['id'];
-export interface SlideDef { n: number; id: string; title: string; icon: string; section: SectionId | 'profile'; tone: Tone; anchor?: SectionId }
-export const SLIDES: SlideDef[];
-export const SECTION_FIRST_SLIDE: Record<SectionId, string>;
-```
-
-- [ ] **Step 1:** Write `tests/unit/slides.test.ts`:
-  - `SLIDES.map(s => s.id)` equals `['slide-1', …, 'slide-10']`, and `n` equals index + 1.
-  - `SLIDES.map(s => s.title)` equals `['Thuy Anh Phi', 'Top Posts · Careers page', 'Top Posts', 'Experience · MOR Software', 'Experience · Future Media', 'Experience · Meraces', 'Events', 'Videos', 'Beyond Work', 'Contact']`.
-  - `SLIDES.map(s => s.tone)` equals `['lavender','yellow','mint','pink','lilac','lavender','yellow','mint','pink','lilac']`.
-  - `SLIDES.map(s => s.section)` equals `['profile','top-posts','top-posts','experience','experience','experience','events','videos','beyond-work','contact']`.
-  - `SECTION_FIRST_SLIDE` equals `{ 'top-posts': 'slide-2', experience: 'slide-4', events: 'slide-7', videos: 'slide-8', 'beyond-work': 'slide-9', contact: 'slide-10' }`.
-  - `anchor` is set exactly on the first slide of each section, and equals that section id.
-- [ ] **Step 2:** Run `npx vitest run tests/unit/slides.test.ts` → FAIL (module missing).
-- [ ] **Step 3:** Implement `slides.ts` with the spec §3 values. Derive `anchor` and `SECTION_FIRST_SLIDE` from the first occurrence of each section, rather than hand-writing them.
-- [ ] **Step 4:** Run → PASS.
-- [ ] **Step 5:** Commit: `feat: add slide definitions`.
-
----
-
-### Task 2: Slide component, tones and snapping CSS
-
-**Files:**
-- Create: `src/components/Slide.astro`, `tests/unit/slide.test.ts`
-- Modify: `src/styles/global.css` (add tone tokens, snap and print rules)
-
-**Interfaces:**
-- Consumes: `SlideDef` (Task 1).
-- Produces: `Slide` props `SlideDef & { hideHeader?: boolean }`, default slot. Renders:
-```html
-<section id="slide-N" class="slide slide--{tone}" data-slide data-section="{section}" data-title="{title}" aria-labelledby="slide-N-heading|undefined" aria-label="{title} (only when hideHeader)">
-  {anchor && <span id={anchor} class="slide__anchor"></span>}
-  <div class="slide__inner container"> [header: icon ring + <h2 id="slide-N-heading">] <slot/> </div>
-</section>
-```
-
-- [ ] **Step 1:** Write `tests/unit/slide.test.ts` (Container API):
-  - Rendering `SLIDES[6]` (events) gives `id="slide-7"`, `class` containing `slide--yellow`, `data-section="events"`, a `<span id="events"`, and an `<h2` whose id equals `aria-labelledby`, containing "Events".
-  - Rendering `SLIDES[0]` with `hideHeader: true` gives no `<h2` and `aria-label="Thuy Anh Phi"`.
-  - Slot content is rendered.
-- [ ] **Step 2:** Run `npx vitest run tests/unit/slide.test.ts` → FAIL.
-- [ ] **Step 3:** Implement `Slide.astro`, reusing the header markup and styles from `Section.astro` (gradient-ring icon with `data-reveal="spin"`). In `global.css`, add:
-  - `--tone-lavender … --tone-lilac` and `.slide--{tone} { background: var(--tone-…) }`;
-  - the snap rules from Global Constraints;
-  - `.slide { display: flex; align-items: center; padding-block: 40px }`, with `.slide__inner` full width;
-  - `.slide__anchor { position: absolute; top: 0 }` and `.slide { position: relative }`;
-  - `@media print { html { scroll-snap-type: none } .slide { min-height: auto } .slide + .slide { break-before: page } }`.
-- [ ] **Step 4:** Run → PASS. Run `npm run check` → 0 errors.
-- [ ] **Step 5:** Commit: `feat: add Slide component with tones and snapping`.
-
----
-
-### Task 3: Slide navigation logic (pure helpers)
-
-**Files:**
-- Create: `src/lib/slidenav.ts`, `tests/unit/slidenav.test.ts`
+- Modify: `src/lib/slidenav.ts` (remove `currentSlide` and `stepTarget`; keep `counterText`; add `currentSlideX`, `wheelStep`; rewrite `navKey`)
+- Modify: `tests/unit/slidenav.test.ts` (replace the old cases)
 
 **Interfaces:**
 - Produces:
 ```ts
-/** index of the current slide: the last slide whose top <= 40% of viewport; last slide when atBottom */
-export function currentSlide(tops: number[], viewportH: number, atBottom: boolean): number;
-export type NavKey = 'next' | 'prev' | 'first' | 'last';
-/** map a key event to an action; null when the key must be left to the browser */
-export function navKey(e: { key: string; shiftKey: boolean; ctrlKey: boolean; altKey: boolean; metaKey: boolean },
-                       focus: { tag: string; dialogOpen: boolean }): NavKey | null;
-/** what 'next'/'prev' should do on the current slide: scroll within it by `step` px, or go to a slide index */
-export function stepTarget(action: 'next' | 'prev', slide: { top: number; bottom: number }, viewportH: number,
-                           tabbarH: number, index: number, count: number): { scrollBy: number } | { goTo: number };
-export function counterText(index: number, count: number): string; // counterText(3, 10) === '04 / 10'
+export function currentSlideX(scrollLeft: number, deckWidth: number, count: number): number;
+export type NavAction = 'next' | 'prev' | 'first' | 'last' | 'page-next' | 'page-prev';
+export function navKey(e: KeyLike, focus: { tag: string; dialogOpen: boolean }): NavAction | null;
+export function wheelStep(deltaY: number, canScrollDown: boolean, canScrollUp: boolean, accumulated: number):
+  { consume: false; accumulated: 0 } | { consume: true; accumulated: number; move: -1 | 0 | 1 };
+export function counterText(index: number, count: number): string; // unchanged
 ```
 
-- [ ] **Step 1:** Write the tests:
-  - `currentSlide([-900, -100, 300, 1200], 800, false) === 2` (40% of 800 = 320, and the last top ≤ 320 is 300). Also `currentSlide([0, 900], 800, false) === 0`, and `currentSlide([-2000, -900], 800, true) === 1`.
+- [ ] **Step 1:** Rewrite `tests/unit/slidenav.test.ts`:
+  - `currentSlideX`: `(0, 400, 10) === 0`; `(390, 400, 10) === 1` (rounding); `(4100, 400, 10) === 9` (clamp); `(0, 0, 10) === 0` (zero width).
   - `navKey`:
-    - ArrowDown, PageDown and Space map to `'next'`;
-    - ArrowUp, PageUp and Shift+Space map to `'prev'`;
-    - Home maps to `'first'` and End to `'last'`;
-    - any key with ctrl, alt or meta held gives `null`;
-    - `dialogOpen: true` gives `null`;
-    - tag `INPUT`, `TEXTAREA`, `SELECT`, `VIDEO` or `IFRAME` gives `null` for every key;
-    - tag `A`, `BUTTON` or `SUMMARY` gives `null` for Space and Shift+Space, but ArrowDown still gives `'next'`;
-    - an unrelated key (`'a'`) gives `null`.
-  - `stepTarget`, with tabbarH 60 and viewportH 800:
-    - `('next', {top: 60, bottom: 1500}, 800, 60, 3, 10)` gives `{ scrollBy: 740 }`, because the bottom is below the viewport;
-    - `('next', {top: 60, bottom: 790}, …, 3, 10)` gives `{ goTo: 4 }`;
-    - `('next', …, 9, 10)` with a fitting slide gives `{ goTo: 9 }` (clamped);
-    - `('prev', {top: -500, bottom: 700}, …, 3, 10)` gives `{ scrollBy: -740 }`, because the top is above the snap line;
-    - `('prev', {top: 60, …}, …, 3, 10)` gives `{ goTo: 2 }`;
-    - `('prev', …, 0, 10)` gives `{ goTo: 0 }`.
-  - `counterText(0, 10) === '01 / 10'` and `counterText(9, 10) === '10 / 10'`.
-- [ ] **Step 2:** Run `npx vitest run tests/unit/slidenav.test.ts` → FAIL.
-- [ ] **Step 3:** Implement. In `stepTarget`, "bottom below viewport" means `slide.bottom > viewportH + 1`, and "top above snap line" means `slide.top < tabbarH - 1`. The scroll step is `viewportH - tabbarH`.
-- [ ] **Step 4:** Run → PASS.
-- [ ] **Step 5:** Commit: `feat: add slide navigation helpers`.
+    - ArrowRight → `next`, ArrowLeft → `prev`, Home → `first`, End → `last`;
+    - PageDown and Space → `page-next`; PageUp and Shift+Space → `page-prev`;
+    - ArrowUp and ArrowDown → `null`, because they stay native;
+    - ctrl, alt or meta held → `null`; `dialogOpen` → `null`;
+    - tags INPUT, TEXTAREA, SELECT, VIDEO and IFRAME → `null` for ArrowRight;
+    - tags A, BUTTON and SUMMARY → `null` for Space, but `next` for ArrowRight;
+    - `'a'` → `null`.
+  - `wheelStep`:
+    - `(30, true, false, 0)` → `{ consume: false, accumulated: 0 }`;
+    - `(30, false, true, 0)` → `{ consume: true, accumulated: 30, move: 0 }`;
+    - `(30, false, true, 30)` → `{ consume: true, accumulated: 0, move: 1 }`;
+    - `(-60, true, false, 0)` → `{ consume: true, accumulated: 0, move: -1 }`;
+    - `(-30, true, true, 0)` → `{ consume: false, accumulated: 0 }`;
+    - `(0, false, false, 20)` → `{ consume: true, accumulated: 20, move: 0 }`.
+  - `counterText` cases are unchanged.
+- [ ] **Step 2:** Run `npx vitest run tests/unit/slidenav.test.ts` → FAIL (missing exports).
+- [ ] **Step 3:** Implement.
+  - `wheelStep`: if the slide can scroll in the delta's direction (`deltaY > 0 && canScrollDown`, or `< 0 && canScrollUp`), return not consumed. Otherwise add the delta. At `|acc| >= 50`, return `move = sign`, `accumulated: 0`; else `move: 0`.
+  - Remove `currentSlide` and `stepTarget`, and their tests.
+- [ ] **Step 4:** Run → PASS. Note: `npm run check` will fail until Task 4 rewrites `SlideNav.astro`'s script; the unit suite must pass.
+- [ ] **Step 5:** Commit: `refactor: navigation helpers for a horizontal deck`.
 
 ---
 
-### Task 4: SlideNav component and TabBar update
+### Task 2: Deck and Slide panel with CSS
 
 **Files:**
-- Create: `src/components/SlideNav.astro`
-- Modify: `src/components/TabBar.astro` (hrefs, counter element, remove tracking script), `tests/unit/header.test.ts` (TabBar and Section tests)
-- Test: `tests/unit/slidenav-render.test.ts`
+- Create: `src/components/Deck.astro`, `tests/unit/deck.test.ts`
+- Modify: `src/components/Slide.astro`, `tests/unit/slide.test.ts`, `src/styles/global.css` (replace the v1 slide/snap block), `src/layouts/Base.astro` (inline script also adds `deck-on`)
 
 **Interfaces:**
-- Consumes: `SLIDES`, `SECTION_FIRST_SLIDE` (Task 1), and `currentSlide`, `navKey`, `stepTarget`, `counterText` (Task 3).
 - Produces:
-  - `TabBar` props `{ sections: readonly {id,label}[]; firstSlide: Record<SectionId,string>; total: number }`. Each tab is `<a href="#{firstSlide[id]}" data-tab-section={id}>`, plus `<span class="tabbar__counter" data-slide-counter aria-live="polite" hidden>01 / {total}</span>`.
-  - `SlideNav` props `{ slides: { n: number; id: string; title: string }[] }`. Renders `<nav class="slidenav" aria-label="Slides" hidden>` containing a list of `<a href="#{id}" class="slidenav__dot" data-dot="{n}"><span class="slidenav__label">{title}</span></a>`.
-  - **The script:**
-    - removes `hidden` from the counter and the rail;
-    - recomputes the current slide on `scroll` (rAF-throttled) and `resize` using `currentSlide`;
-    - when the current slide changes, updates the counter text, the dot `aria-current`, the tab `aria-current` (via the slide's `data-section`, with none for `profile`) and `history.replaceState(null, '', '#' + id)`;
-    - skips the hash update during the first 500ms after load, or until the first user scroll, whichever comes first;
-    - handles keys on `keydown` with `navKey`/`stepTarget`, calling `preventDefault` only when acting;
-    - scrolls with `scrollBy` or `scrollIntoView({ behavior })` per Global Constraints.
+  - **`Slide`** keeps its props. Root: `<section … class="slide slide--{tone}" tabindex="-1" data-slide …>`. It contains the anchor span, `<div class="slide__inner container">…</div>` and `<span class="slide__more" aria-hidden="true" hidden>↓ more</span>`.
+  - **`Deck`** has no props and a default slot. It renders:
+    ```html
+    <main class="deck" data-deck>
+      <slot/>
+      <button class="deck__arrow deck__arrow--prev" data-deck-prev aria-label="Previous slide" hidden>‹</button>
+      <button … data-deck-next aria-label="Next slide" hidden>›</button>
+    </main>
+    ```
+    The buttons sit inside `main`, but are positioned `fixed` relative to the deck area.
 
-- [ ] **Step 1:** Update `tests/unit/header.test.ts`:
-  - The TabBar test now renders with `firstSlide: SECTION_FIRST_SLIDE, total: 10` and expects the hrefs `['slide-2','slide-4','slide-7','slide-8','slide-9','slide-10']`, plus a `data-slide-counter` containing `01 / 10`.
-  - Delete the `Section` describe block (moved to `slide.test.ts`).
+- [ ] **Step 1:** Tests:
+  - `slide.test.ts` adds: `tabindex="-1"`, and a `slide__more` element with `hidden` and `aria-hidden="true"`. The existing assertions are kept.
+  - `deck.test.ts`: renders `<main class="deck"` with `data-deck`, slot content, and two buttons labelled "Previous slide" and "Next slide", both `hidden`.
+- [ ] **Step 2:** Run `npx vitest run tests/unit/slide.test.ts tests/unit/deck.test.ts` → FAIL.
+- [ ] **Step 3:** Implement the components. In `global.css`, replace the v1 block (html snap, `.slide` min-height/snap) with the Global Constraints rules, plus:
+  - `.slide { display: flex; flex-direction: column }` and `.slide__inner { margin-block: auto; padding-block: 32px 72px }`;
+  - the tones are kept;
+  - `.slide__more` is fixed relative to the slide (`position: sticky; bottom: 64px; align-self: center`) in a white pill with an ink border;
+  - `.deck-on .deck { scrollbar-width: none }` plus the webkit equivalent;
+  - `html.deck-on, html.deck-on body { height: 100%; overflow: hidden }`;
+  - print: `.deck { display: block; height: auto; overflow: visible }`, `.slide { height: auto; overflow: visible; break-before: page }`, `.slide__more, .deck__arrow, .slidenav { display: none }`, `html.deck-on, html.deck-on body { overflow: visible; height: auto }`.
 
-  Write `tests/unit/slidenav-render.test.ts`: SlideNav with `SLIDES` renders 10 `data-dot` links, `href="#slide-1"` … `#slide-10`, each label text equal to its title, and a `<nav` with `hidden`.
-- [ ] **Step 2:** Run `npx vitest run tests/unit/header.test.ts tests/unit/slidenav-render.test.ts` → FAIL.
-- [ ] **Step 3:** Implement `TabBar` and `SlideNav` per Interfaces.
-  - Dot rail CSS: `position: fixed; right: 18px; top: 50%; translate: 0 -50%; z-index: 9`.
-  - Dots are 14px circles, white with an ink border; the current one is filled ink.
-  - Labels sit to the left of the dot, visible on `:hover`/`:focus-visible`, in a white pill with an ink border.
-  - `@media (max-width: 899px) { .slidenav { display: none } }`.
-- [ ] **Step 4:** Run → PASS. `npm run check` → 0 errors (index.astro still compiles: pass the new TabBar props there with `SECTION_FIRST_SLIDE` and `SLIDES.length`).
-- [ ] **Step 5:** Commit: `feat: add slide nav (counter, dots, keys) and point tabs at slides`.
+  `Base.astro`'s inline script adds `document.documentElement.classList.add('deck-on')` unconditionally (it is unrelated to reduced motion).
+- [ ] **Step 4:** Run → PASS.
+- [ ] **Step 5:** Commit: `feat: horizontal deck container and full-screen slide panels`.
 
 ---
 
-### Task 5: Recompose the page into slides and update the browser tests
+### Task 3: Bottom dots and fixed tab bar
 
 **Files:**
-- Modify: `src/pages/index.astro`, `tests/e2e/page.spec.ts`, `tests/e2e/reveal.spec.ts`, `tests/e2e/video-modal.spec.ts`, `tests/e2e/zoom.spec.ts`
-- Delete: `src/components/Section.astro`
-- Create: `tests/e2e/slideshow.spec.ts`
+- Modify: `src/components/SlideNav.astro` (markup and styles only; the script is replaced in Task 4, so leave a stub `<script>` that removes `hidden` from the nav), `src/components/TabBar.astro` (fixed, exact height), `tests/unit/slidenav-render.test.ts`
 
 **Interfaces:**
-- Consumes: everything above. Slide 1 = `<Slide {...SLIDES[0]} hideHeader>` wrapping `ProfileHeader`. `ProfileHeader` itself is unchanged; its `.container` padding is fine inside `.slide__inner`.
+- Produces:
+  - `SlideNav` props unchanged. It renders `<nav class="slidenav" aria-label="Slides" hidden>` with an `<ol>` of 10 `<a href="#slide-N" class="slidenav__dot" data-dot="N"><span class="slidenav__label">title</span></a>`. Spec §5 says dots work without JS, so unlike v1 the nav is **not** rendered `hidden`.
+  - TabBar: `.tabbar { position: fixed; inset: 0 0 auto; height: var(--tabbar-h); box-sizing: border-box }`, and its row `height: 100%`.
 
-- [ ] **Step 1:** Update the existing e2e selectors to the slide ids:
-  - `page.spec`: 'sections in order' becomes the `[data-slide]` ids `slide-1…slide-10`; 'tab highlight' clicks the Events tab and expects `#slide-7` in viewport plus that tab `aria-current`; `#videos .video__media` becomes `#slide-8 .video__media`; `#top-posts .post` becomes `#slide-3 .post`.
-  - `reveal.spec`: `#events li` becomes `#slide-7 li`.
-  - `video-modal.spec` and `zoom.spec`: `#videos` becomes `#slide-8`.
+- [ ] **Step 1:** Update `slidenav-render.test.ts` to expect `<nav[^>]*aria-label="Slides"` **without** `hidden`, an `<ol`, and the 10 dots with their titles (as now).
+- [ ] **Step 2:** Run → FAIL (the nav still has `hidden`).
+- [ ] **Step 3:** Implement the markup and styles.
+  - The dot row is `position: fixed; left: 50%; bottom: 16px; translate: -50% 0; z-index: 9`, in a white pill with an ink border, 6px padding and 8px gaps.
+  - Dots are 12px.
+  - Labels sit above the dot, visible on hover/focus only at ≥ 640px.
+  - Remove the v1 right-rail styles.
+- [ ] **Step 4:** Run `npx vitest run` → all PASS.
+- [ ] **Step 5:** Commit: `feat: bottom dot row and fixed tab bar`.
 
-  Write `tests/e2e/slideshow.spec.ts` (both projects unless noted):
-  - `ten full-height slides`: 10 `[data-slide]`, each `height >= innerHeight - tabbarHeight - 1`.
-  - `keyboard moves between slides`: press End → counter `10 / 10`; Home → `01 / 10`; from the top, PageDown → `02 / 10` and `location.hash === '#slide-2'`.
-  - `arrow scrolls within a tall slide first` (mobile): go to `#slide-4`; if the slide is taller than the viewport, ArrowDown keeps the counter at `04 / 10` and increases `scrollY`.
-  - `experience tab stays current across role slides`: for slides 4, 5 and 6, scroll to each and expect the Experience tab `aria-current="true"`.
-  - `dot click jumps` (desktop): click dot 7 → counter `07 / 10`. On mobile, `.slidenav` is not visible.
-  - `deep link to a slide`: goto `/#slide-4` → counter `04 / 10`.
-  - **Review Focus tests:**
-    - `legacy anchors land on their slide`: goto `/#events`, wait 800ms → counter `07 / 10`, and `#slide-7` is in viewport.
-    - `expanding a story does not jump slides` (mobile): at `#slide-4`, click its `summary` → wait 600ms → counter still `04 / 10`.
-    - `space on a summary toggles it`: focus slide 4's `summary`, press Space → `details[open]`, counter unchanged.
-    - `keys do nothing while the lightbox is open`: open the first `[data-lightbox]` on slide 4, press ArrowDown → counter unchanged.
-    - `scrolling adds no history entries`: record `history.length`, press PageDown 3 times → `history.length` unchanged.
-  - `space does not change slide while the video modal is open`: open the dance video, press Space → counter unchanged.
-  - `reduced motion uses instant scrolling` (`reducedMotion: 'reduce'`): press End, and the counter reads `10 / 10` within 100ms.
-  - `without JS` (`javaScriptEnabled: false`): 10 slides are visible, `.slidenav` and `[data-slide-counter]` are not visible, and clicking the Contact tab brings `#slide-10` into the viewport.
-- [ ] **Step 2:** Run `npx playwright test` → the new and updated tests FAIL (page not recomposed).
-- [ ] **Step 3:** Recompose `index.astro`:
-  - map `SLIDES` to `<Slide>` wrappers with the content in spec §3;
-  - render `<TabBar sections={SECTIONS} firstSlide={SECTION_FIRST_SLIDE} total={SLIDES.length} />` after slide 1 and before `<main>` (slides 2–10 inside `<main>`), so the tab bar stays sticky;
-  - add `<SlideNav slides={SLIDES} />`;
-  - remove the old `Section` import and the `icons` map;
-  - delete `Section.astro`.
-- [ ] **Step 4:** Run `npx playwright test` → all pass (the YouTube tests may still SKIP). Run `npx vitest run` → all pass. Run `npm run check` → 0 errors.
-- [ ] **Step 5:** Take screenshots of every slide at 390×844 and 1440×900 (reduced motion, scroll each into view), and review them: no overlap, no clipped text, tone contrast, the dot rail not covering cards (if it overlaps at 1440, add `padding-right: 56px` to `.slide__inner` at ≥ 900px). Run Lighthouse on mobile (4322 preview) → all four categories ≥ 90.
-- [ ] **Step 6:** Commit: `feat: recompose portfolio into snapping slides`.
+---
+
+### Task 4: Navigation script, page composition and browser tests
+
+**Files:**
+- Modify: `src/components/SlideNav.astro` (script), `src/pages/index.astro`, `tests/e2e/slideshow.spec.ts` (rewrite), and other `tests/e2e/*.spec.ts` only where they assume page-level vertical scrolling
+
+**Interfaces:**
+- Consumes: `currentSlideX`, `navKey`, `wheelStep`, `counterText` (Task 1); `Deck`, `Slide` (Task 2); `SlideNav`, `TabBar` (Task 3); `SLIDES`, `SECTION_FIRST_SLIDE`.
+- **Script behaviour:** exactly spec §6, with these pinned details:
+  - On a current-slide change, reset `scrollTop = 0` on every slide **except** the current one (Review Focus 1).
+  - On `resize`, `deck.scrollTo({ left: current * deck.clientWidth, behavior: 'auto' })` (Review Focus 4).
+  - Wheel listener on the deck with `{ passive: false }`. Ignore it when a `dialog[open]` exists. "Can scroll" for the current slide means `scrollTop + clientHeight < scrollHeight - 1` (down) or `scrollTop > 0` (up). During the 700ms cooldown, consumed wheel at an edge is `preventDefault`ed and dropped (Review Focus 2).
+  - `page-next` / `page-prev` move slides only at the edge; otherwise do nothing and let the browser scroll the focused slide.
+  - After `goTo`, call `slides[i].focus({ preventScroll: true })`.
+  - The arrows call `goTo(current ± 1)`, and their `hidden` state is set by index and only when the viewport is ≥ 640px (`matchMedia`).
+  - The hint is updated on each slide's `scroll` and on slide change.
+  - Deep link: before anything else, resolve `location.hash` to an index (via `#slide-N` or `SECTION_FIRST_SLIDE` legacy ids read from `[data-section]`/anchor spans), `scrollTo` it with `'auto'`, then enable hash rewriting.
+- **index.astro:**
+  ```
+  <TabBar …/>
+  <Deck> {10 <Slide>} </Deck>
+  <SlideNav slides={SLIDES}/>
+  Lightbox / VideoModal / Reveal
+  ```
+  Update the grid classes to the spec §4 column counts (`grid--4` = 4/2/1 at 1200/640, `grid--3` = 3/2/1). Beyond Work uses `grid--4`.
+
+- [ ] **Step 1:** Rewrite `tests/e2e/slideshow.spec.ts` (both projects unless noted):
+  - `each slide fills the deck`: for all 10 slides, the box equals the `[data-deck]` box within ±1. `document.scrollingElement.scrollHeight <= innerHeight + 1`, and `scrollWidth <= innerWidth`.
+  - `keys move slides`: ArrowRight → `02 / 10` and `#slide-2`; End → `10 / 10`; ArrowLeft → `09 / 10`; Home → `01 / 10`. `history.length` is unchanged.
+  - `arrows move slides` (desktop): next is visible and prev hidden on slide 1; click next → `02 / 10`; End → next hidden. On phones both are hidden.
+  - `dot click moves to its slide`: click dot 7 → `07 / 10`, and dot 7 is `aria-current`.
+  - `wheel at a short slide's edge moves on`: on slide 1 (desktop), `page.mouse.wheel(0, 120)` → `02 / 10`.
+  - `wheel inside a tall slide scrolls it` (phone): at slide 4, wheel 120 → still `04 / 10`, and slide 4's `scrollTop > 0`.
+  - `a long wheel burst moves one slide` (desktop): from slide 1, 10 × wheel 120 within ~300ms → `02 / 10`.
+  - `pagedown scrolls inside then moves on` (phone, slide 4): PageDown → same slide, `scrollTop > 0`; repeat until the counter changes (≤ 15 presses) → `05 / 10`.
+  - `more hint follows the slide's scroll` (phone, slide 4): `.slide__more` is visible; scroll slide 4 to its bottom → hidden.
+  - `arriving does not reset the current slide mid-read`: scroll slide 8 down 300px programmatically while it is current; wait 500ms → `scrollTop` is still ≥ 300. Move to slide 9 and back → slide 8 `scrollTop === 0`.
+  - `expanding a story keeps the slide and position` (phone): at slide 4, scroll 200px, click its `summary`, wait 400ms → still `04 / 10`, and `scrollTop >= 200`.
+  - `resizing keeps the current slide`: at slide 5, set the viewport to the other size → `05 / 10`, and the slide box equals the deck box.
+  - `swipe moves one slide` (phone): touch-drag right-to-left across 60% of the width → `02 / 10`.
+  - `deep links`: `/#slide-4` → `04 / 10`; `/#events` → `07 / 10`.
+  - `keys and wheel do nothing while a pop-up is open`: open the lightbox on slide 4; ArrowRight and wheel 120 → `04 / 10`.
+  - `screen reader announcement once`: as in v1, End → the live region reads `Slide 10 of 10: Contact` with ≤ 2 mutations.
+  - `reduced motion`: End → `10 / 10` within 300ms.
+  - `without JS`: 10 slides, each fills the deck box; `[data-deck]` `scrollWidth > clientWidth`; the counter and arrows are hidden; dots are visible; clicking the Contact tab puts `#slide-10` in viewport.
+
+  Update the other e2e files only where they rely on page-level vertical scrolling. The legacy `page.spec` 'no horizontal scroll' keeps checking `document.documentElement.scrollWidth <= innerWidth`.
+- [ ] **Step 2:** Run `npx playwright test` → the new tests FAIL.
+- [ ] **Step 3:** Implement the script and `index.astro`.
+- [ ] **Step 4:** Run `npx playwright test`, `npx vitest run` and `npm run check` → all green (the YouTube tests may SKIP).
+- [ ] **Step 5:** Take screenshots of all 10 slides at 390×844 and 1440×900 (reduced motion) and review them: no overlap with the dots, hint or arrows; centred short slides; readable tones. Run Lighthouse on mobile → all four categories ≥ 90.
+- [ ] **Step 6:** Commit: `feat: horizontal full-screen slide deck`.
