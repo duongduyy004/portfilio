@@ -58,4 +58,11 @@ describe('VideoEmbed', () => {
     // the screenshot itself can still be enlarged
     expect(html).toMatch(/<a[^>]*data-lightbox/);
   });
+
+  it('#19 a link card without a url says coming soon once', async () => {
+    const html = await render(VideoEmbed, {
+      video: { title: 'YouTube channel', kind: 'link', url: undefined, poster, caption: 'c' },
+    });
+    expect(html.match(/coming soon/gi)).toHaveLength(1);
+  });
 });

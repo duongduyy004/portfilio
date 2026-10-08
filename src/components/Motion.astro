@@ -11,6 +11,8 @@
       const max = Number(card.dataset.tilt) || 6;
       card.addEventListener('pointermove', (e) => {
         if (e.pointerType !== 'mouse' && e.pointerType !== 'pen') return;
+        // let the drop-in finish first: tilt's transform would otherwise cut it short
+        if (card.getAnimations().some((a) => a instanceof CSSAnimation && a.playState === 'running')) return;
         const t = tiltFor(e.clientX, e.clientY, card.getBoundingClientRect(), max);
         card.style.setProperty('--rx', String(t.rx));
         card.style.setProperty('--ry', String(t.ry));
@@ -33,15 +35,20 @@
     let queued = false;
     const apply = () => {
       queued = false;
-      for (const el of magnets) {
-        if (el.offsetParent === null && getComputedStyle(el).position !== 'fixed') continue; // hidden
+      // read every position first, then write: no layout thrash across ~20 elements
+      const reads = magnets.map((el) => {
+        if (el.offsetParent === null && getComputedStyle(el).position !== 'fixed') return null; // hidden
         // measure from the element's resting position, not its pulled one
         const r = el.getBoundingClientRect();
         const [tx, ty] = (el.style.translate || '0px 0px').split(' ').map((v) => parseFloat(v) || 0);
-        const cx = r.left - tx + r.width / 2;
-        const cy = r.top - ty + r.height / 2;
-        const o = magnetOffset(px - cx, py - cy, RADIUS + Math.max(r.width, r.height) / 2, MAX);
-        el.style.translate = o.x || o.y ? `${o.x.toFixed(2)}px ${o.y.toFixed(2)}px` : '';
+        // data-magnet="N" sets a tight total radius (closely packed dots); default reaches past the edge
+        const radius = Number(el.dataset.magnet) || RADIUS + Math.max(r.width, r.height) / 2;
+        return { el, cx: r.left - tx + r.width / 2, cy: r.top - ty + r.height / 2, radius };
+      });
+      for (const m of reads) {
+        if (!m) continue;
+        const o = magnetOffset(px - m.cx, py - m.cy, m.radius, MAX);
+        m.el.style.translate = o.x || o.y ? `${o.x.toFixed(2)}px ${o.y.toFixed(2)}px` : '';
       }
     };
     document.addEventListener(

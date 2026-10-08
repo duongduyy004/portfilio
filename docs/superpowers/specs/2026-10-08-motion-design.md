@@ -20,10 +20,11 @@ Make the deck feel modern and alive with subtle, layered motion, without hurting
 ## 3. Effects
 
 ### 3.1 Swipe-linked slide transitions
-- Driven by each slide's horizontal visibility in the deck: `animation-timeline: view(inline)` on `.slide__inner` (the slide itself is the subject; its content animates).
+- Driven by each slide's horizontal visibility in the deck. Each `.slide` declares a named timeline, `view-timeline: --slide inline`, and its content uses `animation-timeline: --slide`. *(As built: `view(inline)` on `.slide__inner` would track the slide's own vertical scroller, not the deck.)*
+- Fill mode is `none` and the exit range starts at 1%, so nothing lingers on a resting slide, which sits at exactly exit 0%. The entry parallax applies to wrappers only; cards with `[data-reveal]` keep their drop-in.
 - **Exit** (the slide moving out of view): `scale` 1 → 0.94, `opacity` 1 → 0.3, `filter: blur(0 → 4px)`. The blur applies only at ≥ 640px.
 - **Entry:** the slide header translates from `40px` (in the direction of travel) to 0 over the first 40% of entry. Cards (`.slide__inner > :not(.slide__head)`) do the same from `80px`, so they trail the header.
-- **Background wash:** each slide has a `::before` gradient from its tone to the next tone at its right edge, 48px wide, so tones blend across the boundary.
+- **Background wash:** each slide's background is a horizontal gradient whose outer 48px blend toward the neighbouring tones (`--prev-tone` / `--next-tone`), so both sides meet at the same mixed colour. *(As built: a background gradient, not `::before`, because a pseudo-element would scroll away inside tall slides.)*
 - Wrapped in `@supports (animation-timeline: view())` and `@media (prefers-reduced-motion: no-preference)`.
 
 ### 3.2 Heading reveal
@@ -45,7 +46,8 @@ Make the deck feel modern and alive with subtle, layered motion, without hurting
 - `data-magnet` on the deck arrows, the profile Contact button, the contact-card buttons, tabs and dots.
 - Within a 64px radius of the element's centre (plus its half-size), the element translates toward the pointer by `min(6px, distance falloff)`, and springs back on leave (250ms transition).
 - Uses the `translate` property (not `transform`), so it composes with the existing hover transforms.
-- Same pointer and reduced-motion gating as tilt.
+- Same pointer and reduced-motion gating as tilt. `data-magnet="N"` sets a tight total radius for closely packed controls (the dots use 16px). Positions are all read before any are written.
+- Tilt does not start until the card's drop-in animation has finished.
 
 ### 3.5 Odometer stats
 - `StatCounter` renders:
@@ -58,7 +60,8 @@ Make the deck feel modern and alive with subtle, layered motion, without hurting
 
 ### 3.6 Ambient blobs
 - Each slide gets `<div class="slide__blobs" aria-hidden="true"><span></span><span></span><span></span></div>`:
-  - absolutely positioned behind `.slide__inner`, with `pointer-events: none`;
+  - a **sticky** layer (`top: 0`, height and negative margin equal to the deck height) behind `.slide__inner`, so it covers the visible area of tall slides without adding scroll height, with `pointer-events: none`;
+  - only the current slide's blobs drift and get `will-change` (SlideNav marks `[data-current]`). Without JS, only the first slide's blobs drift;
   - blobs are 40–60vmax circles in tone-derived colours (`color-mix` of the tone with white or ink), `filter: blur(60px)`, `opacity: .18`;
   - they drift with `translate` and `scale` keyframes on 22s, 26s and 30s loops, `alternate`.
 - At < 640px, the third blob is hidden.
@@ -68,7 +71,8 @@ Make the deck feel modern and alive with subtle, layered motion, without hurting
 - New `Ticker.astro` at the bottom of slide 1's content. It is an ink band, 44px tall, with white text and items separated by `✦`.
 - Items: each `profile.stats` entry as "{value} {label}", followed by each `profile.skills` entry.
 - Content duplicated once for a seamless loop: `translateX(0 → -50%)`, linear, 30s, infinite. `animation-play-state: paused` on hover.
-- `aria-hidden="true"` (all facts are already on the page).
+- `aria-hidden="true"` (all facts are already on the page). A Pause/Play button (`aria-pressed`) and tap-to-toggle satisfy WCAG 2.2.2 for keyboard and touch users.
+- Word-reveal and odometer start states apply to `screen` only, so print always shows final headings and digits.
 - Under reduced motion it is a static, horizontally scrollable band (no animation).
 
 ## 4. Architecture

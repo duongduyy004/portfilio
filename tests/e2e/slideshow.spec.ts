@@ -310,12 +310,7 @@ test.describe('without JavaScript', () => {
   });
 });
 
-// Wheel-gesture cadence tests. Under full-suite CPU contention, timer/CDP gaps can stretch past the
-// 250ms "new gesture" threshold and turn one burst into two; the logic is verified in isolation,
-// so only these may retry.
-test.describe('wheel gesture timing', () => {
-  test.describe.configure({ retries: 2 });
-
+test.describe('wheel gesture timing @timing', () => {
   test('a long wheel burst moves one slide', async ({ page }) => {
     await page.goto('/#slide-10');
     await expect(counter(page)).toHaveText('10 / 10');

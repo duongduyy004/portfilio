@@ -22,9 +22,8 @@
 
 *, *::before, *::after { box-sizing: border-box; }
 
-html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+html { -webkit-text-size-adjust: 100%; }
 @media (prefers-reduced-motion: reduce) {
-  html { scroll-behavior: auto; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
 
@@ -112,8 +111,9 @@ html.deck-on body { height: 100%; overflow: hidden; }
   scroll-snap-type: x mandatory;
   overscroll-behavior-x: contain;
 }
-.deck-on .deck { scrollbar-width: none; }
-.deck-on .deck::-webkit-scrollbar { display: none; }
+/* the navigation script adds .deck-nav when its controls are live; until then keep the scrollbar */
+.deck-nav .deck { scrollbar-width: none; }
+.deck-nav .deck::-webkit-scrollbar { display: none; }
 .slide {
   position: relative;
   flex: 0 0 100%;
@@ -126,6 +126,7 @@ html.deck-on body { height: 100%; overflow: hidden; }
   scroll-snap-stop: always;
 }
 .slide:focus { outline: none; }
+.slide:focus-visible { outline: 3px solid var(--accent); outline-offset: -6px; }
 .slide__inner { width: 100%; margin-block: auto; padding-block: 32px 72px; }
 .slide__anchor { position: absolute; top: 0; }
 .slide__more {
@@ -151,11 +152,6 @@ html.deck-on body { height: 100%; overflow: hidden; }
   padding: 3px 12px;
 }
 .slide__more[hidden] { display: none; }
-.slide--lavender { background: var(--tone-lavender); }
-.slide--yellow { background: var(--tone-yellow); }
-.slide--mint { background: var(--tone-mint); }
-.slide--pink { background: var(--tone-pink); }
-.slide--lilac { background: var(--tone-lilac); }
 
 @media print {
   html.deck-on, html.deck-on body { height: auto; overflow: visible; }
@@ -249,3 +245,19 @@ html.deck-on body { height: 100%; overflow: hidden; }
   position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
   overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
 }
+
+/* skip link: hidden until focused, then a pill over the tab bar */
+.skip-link {
+  position: fixed;
+  top: 8px;
+  left: 8px;
+  z-index: 20;
+  padding: 8px 16px;
+  font-weight: 700;
+  color: #fff;
+  background: var(--ink);
+  border-radius: 999px;
+  text-decoration: none;
+  translate: 0 -200%;
+}
+.skip-link:focus { translate: 0 0; }

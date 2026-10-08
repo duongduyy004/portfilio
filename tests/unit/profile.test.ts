@@ -30,6 +30,15 @@ describe('profile content', () => {
     expect(profile.highlight.stats.map((s) => s.value)).toEqual(['687,370', '+209%', '49,110', '+135%', '+50%']);
   });
 
+  it('#20 post details truncate consistently (never overstate)', () => {
+    expect(profile.posts.map((p) => p.detail)).toEqual([
+      '100K unique viewers · 13.3K engagements · 99 new followers',
+      '71K viewers · 3.1K engagements',
+      '45K viewers · 5.5K engagements',
+      '36K viewers · 3.5K engagements',
+    ]);
+  });
+
   it('top posts match the deck', () => {
     expect(profile.posts.map((p) => p.views)).toEqual(['160K', '93K', '66K', '54K+']);
   });

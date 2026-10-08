@@ -66,13 +66,13 @@ export const profile: Profile = {
     {
       title: "An intern's worries when job hunting",
       views: '66K',
-      detail: '46K viewers · 5.6K engagements',
+      detail: '45K viewers · 5.5K engagements',
       url: undefined, // TODO(link)
     },
     {
       title: 'What nobody tells you',
       views: '54K+',
-      detail: '37K viewers · 3.5K engagements',
+      detail: '36K viewers · 3.5K engagements',
       url: undefined, // TODO(link)
     },
   ],

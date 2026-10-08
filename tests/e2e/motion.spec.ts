@@ -98,6 +98,8 @@ test.describe('tilt and magnet', () => {
     await goSlide(page, 3);
     const card = page.locator('#slide-3 [data-tilt]').first();
     await expect(card).toBeAttached();
+    // tilt waits for the card's drop-in to finish
+    await expect.poll(() => card.evaluate((e) => e.getAnimations().filter((a) => a.playState === 'running').length)).toBe(0);
     const box = (await card.boundingBox())!;
     await page.mouse.move(box.x + box.width * 0.5, box.y + box.height * 0.5);
     await page.mouse.move(box.x + box.width * 0.9, box.y + box.height * 0.1, { steps: 4 });

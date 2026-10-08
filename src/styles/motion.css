@@ -64,8 +64,10 @@
   border-radius: 50%;
   filter: blur(60px);
   opacity: 0.18;
-  will-change: translate, scale; /* own layer: drifting doesn't repaint the blur */
 }
+/* own compositor layer only for the slide on screen: drifting doesn't repaint the blur, and
+   off-screen slides don't hold GPU memory */
+.slide[data-current] .slide__blobs span { will-change: translate, scale; }
 .slide__blobs span:nth-child(1) { top: -18%; left: -12%; background: color-mix(in srgb, var(--tone) 60%, white); }
 .slide__blobs span:nth-child(2) { bottom: -22%; right: -12%; background: color-mix(in srgb, var(--tone) 70%, var(--ink)); }
 .slide__blobs span:nth-child(3) { top: 30%; left: 40%; width: 40vmax; height: 40vmax; background: color-mix(in srgb, var(--tone) 50%, white); }
@@ -82,6 +84,8 @@
   .slide__blobs span:nth-child(3) { animation: blob-c 30s ease-in-out infinite alternate; }
   /* only the slide on screen drifts (SlideNav marks it); without JS none is marked, so all drift */
   .deck:has([data-current]) .slide:not([data-current]) .slide__blobs span { animation-play-state: paused; }
+  /* without JS nothing marks a current slide: only the first slide (the one on screen) drifts */
+  html:not(.deck-on) .slide:not(:first-child) .slide__blobs span { animation-play-state: paused; }
 }
 @keyframes blob-a { to { translate: 12vmax 8vmax; scale: 1.15; } }
 @keyframes blob-b { to { translate: -10vmax -6vmax; scale: 0.9; } }

@@ -4,7 +4,6 @@ import TabBar from '../../src/components/TabBar.astro';
 import { profile } from '../../src/data/profile';
 import { SECTION_FIRST_SLIDE } from '../../src/data/slides';
 import { SECTIONS } from '../../src/data/types';
-import { formatStat, parseStat } from '../../src/lib/stat';
 import { render } from './render';
 
 const headerProps = {
@@ -15,17 +14,6 @@ const headerProps = {
   avatar: profile.avatar,
   stats: profile.stats,
 };
-
-describe('formatStat', () => {
-  it('round-trips each stat shape', () => {
-    for (const v of ['+267%', '6M+', '687,370', '13.3K', '5']) {
-      expect(formatStat(parseStat(v)!, parseStat(v)!.number)).toBe(v);
-    }
-  });
-  it('formats an intermediate value', () => {
-    expect(formatStat(parseStat('687,370')!, 1234)).toBe('1,234');
-  });
-});
 
 describe('ProfileHeader', () => {
   it('has exactly one h1 with the name', async () => {

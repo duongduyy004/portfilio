@@ -32,6 +32,7 @@ const [eventsSlide, videosSlide, beyondSlide, contactSlide] = rest.slice(profile
 ---
 
 <Base title={title} description={description}>
+  <a class="skip-link" href="#slide-1">Skip to slides</a>
   <TabBar sections={SECTIONS} firstSlide={SECTION_FIRST_SLIDE} total={SLIDES.length} />
 
   <Deck>

@@ -19,7 +19,7 @@ const { sections, firstSlide, total } = Astro.props;
     </ul>
     <!-- shown by SlideNav's script; meaningless without it -->
     <span class="tabbar__counter" data-slide-counter hidden>01 / {total}</span>
-    <!-- announced only once scrolling settles (see SlideNav), so passing slides don't chatter -->
+    <!-- announced 400ms after the last slide change (see SlideNav), so passing slides don't chatter -->
     <span class="sr-only" data-slide-live aria-live="polite"></span>
   </div>
 </nav>
@@ -48,7 +48,7 @@ const { sections, firstSlide, total } = Astro.props;
     gap: 8px;
     list-style: none;
     margin: 0;
-    padding: 10px 0;
+    padding: 10px 6px; /* room for the first/last tab's focus ring inside the scroller */
     overflow-x: auto;
     scrollbar-width: none;
   }

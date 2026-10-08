@@ -11,7 +11,7 @@ const { slides } = Astro.props;
   <ol>
     {slides.map((s) => (
       <li>
-        <a href={`#${s.id}`} class="slidenav__dot" data-dot={s.n} data-magnet><span class="slidenav__label">{s.title}</span></a>
+        <a href={`#${s.id}`} class="slidenav__dot" data-dot={s.n} data-magnet="16"><span class="slidenav__label">{s.title}</span></a>
       </li>
     ))}
   </ol>
@@ -105,6 +105,8 @@ const { slides } = Astro.props;
   const dialogOpen = () => document.querySelector('dialog[open]') !== null;
 
   counter?.removeAttribute('hidden');
+  // navigation is live: its controls replace the deck scrollbar (kept if this script never runs)
+  document.documentElement.classList.add('deck-nav');
 
   const canScrollDown = (s: HTMLElement) => s.scrollTop + s.clientHeight < s.scrollHeight - 1;
   const canScrollUp = (s: HTMLElement) => s.scrollTop > 0;
@@ -169,10 +171,15 @@ const { slides } = Astro.props;
   // once the deck stops moving: slides you've left start at the top next time. Doing this only on
   // settle keeps a half-swiped (or snapped-back) slide exactly where the reader left it.
   function settle() {
+    update(); // scroll events are rAF-throttled: make sure `current` reflects where the deck stopped
     target = -1;
     slides.forEach((s, j) => {
       if (j !== current && s.scrollTop !== 0) s.scrollTop = 0;
     });
+    // a swipe moves the deck but not focus; bring focus along if it was on a slide now off screen
+    const active = document.activeElement;
+    const owner = slides.find((s) => s.contains(active));
+    if (owner && owner !== slides[current]) slides[current].focus({ preventScroll: true });
   }
   let settleTimer: number | undefined;
   deck.addEventListener('scrollend', () => {
@@ -205,8 +212,9 @@ const { slides } = Astro.props;
   });
   wide.addEventListener('change', updateArrows);
 
-  prevBtn?.addEventListener('click', () => goTo(pos() - 1));
-  nextBtn?.addEventListener('click', () => goTo(pos() + 1));
+  // keep focus on the button so keyboard users can press it again
+  prevBtn?.addEventListener('click', () => goTo(pos() - 1, false));
+  nextBtn?.addEventListener('click', () => goTo(pos() + 1, false));
 
   // dots and tabs are plain anchors (they work without JS); with JS, slide there smoothly instead
   document.addEventListener('click', (e) => {
@@ -224,9 +232,10 @@ const { slides } = Astro.props;
     const action = navKey(e, { tag: active?.tagName ?? 'BODY', dialogOpen: dialogOpen() });
     const slide = slides[current];
     if (!action) {
-      // ↑/↓ scroll the current slide even when focus is on the page itself rather than the slide
-      const onPage = !active || active === document.body || active === deck;
-      if (onPage && !dialogOpen() && !e.altKey && !e.ctrlKey && !e.metaKey && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
+      // ↑/↓ scroll the current slide whenever focus is outside the slides (page, tabs, dots,
+      // arrows) — the document itself never scrolls; inside a slide the browser handles them
+      const outsideSlides = !active || !slides.some((s) => s.contains(active));
+      if (outsideSlides && !dialogOpen() && !e.altKey && !e.ctrlKey && !e.metaKey && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
         e.preventDefault();
         slide.scrollBy({ top: e.key === 'ArrowDown' ? 40 : -40 });
       }
@@ -250,6 +259,7 @@ const { slides } = Astro.props;
   // vertical wheel: scroll inside the slide; at its edge, a firm push moves one slide
   let accumulated = 0;
   let cooldownUntil = 0;
+  let lastWheel = 0;
   deck.addEventListener(
     'wheel',
     (e) => {
@@ -260,6 +270,9 @@ const { slides } = Astro.props;
       const down = canScrollDown(slide);
       const up = canScrollUp(slide);
       const now = performance.now();
+      // a pause of 300ms ends the gesture: leftover residue must not add up across minutes
+      if (now - lastWheel > 300) accumulated = 0;
+      lastWheel = now;
       if (now < cooldownUntil) {
         // after a slide change, swallow the rest of the gesture entirely: momentum must neither
         // move another slide nor scroll the slide just arrived on. It ends after a 250ms pause.

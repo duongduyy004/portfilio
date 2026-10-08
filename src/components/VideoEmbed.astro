@@ -21,7 +21,8 @@ const modalData = {
   'data-title': video.title,
   'data-caption': video.caption,
 };
-const platform = { youtube: 'YouTube', tiktok: 'TikTok', link: 'link', file: '' }[video.kind];
+// one 'coming soon' per card, naming the platform when there is one
+const soonLabel = { youtube: 'YouTube', tiktok: 'TikTok', link: 'Link', file: '' }[video.kind];
 ---
 
 <article class="video card" data-reveal="drop" data-tilt>
@@ -48,14 +49,13 @@ const platform = { youtube: 'YouTube', tiktok: 'TikTok', link: 'link', file: '' 
         {posterImage && (
           <ZoomImage class="video__zoom" photo={posterImage} caption={`${video.title} — ${posterImage.alt}`} widths={[320, 640]} sizes="(min-width: 960px) 340px, 90vw" />
         )}
-        <span class="video__soon">Link coming soon</span>
+        <span class="video__soon">{soonLabel} coming soon</span>
       </div>
     )}
   </div>
   <div class="video__body">
     <h3>{video.title}</h3>
     {video.caption && <p>{video.caption}</p>}
-    {video.kind !== 'file' && !link.href && <p class="video__foot">{platform} coming soon</p>}
   </div>
 </article>
 
@@ -111,5 +111,4 @@ const platform = { youtube: 'YouTube', tiktok: 'TikTok', link: 'link', file: '' 
   .video__body { padding: 12px 16px 16px; display: grid; gap: 4px; }
   h3 { font-size: 18px; }
   p { font-size: 14px; color: var(--muted); }
-  .video__foot { font-weight: 600; }
 </style>
