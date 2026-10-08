@@ -1,0 +1,56 @@
+---
+import type { SlideDef } from '../data/slides';
+
+type Props = SlideDef & { hideHeader?: boolean };
+
+const { id, title, icon, section, tone, anchor, hideHeader = false } = Astro.props;
+const headingId = `${id}-heading`;
+---
+
+<section
+  id={id}
+  class:list={['slide', `slide--${tone}`]}
+  data-slide
+  data-section={section}
+  data-title={title}
+  aria-labelledby={hideHeader ? undefined : headingId}
+  aria-label={hideHeader ? title : undefined}
+>
+  {anchor && <span id={anchor} class="slide__anchor"></span>}
+  <div class="slide__inner container">
+    {!hideHeader && (
+      <header class="slide__head">
+        <span class="slide__icon" aria-hidden="true" data-reveal="spin"><span>{icon}</span></span>
+        <h2 id={headingId}>{title}</h2>
+      </header>
+    )}
+    <slot />
+  </div>
+</section>
+
+<style>
+  .slide__head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+  .slide__icon {
+    flex: none;
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    padding: 3px;
+    background: linear-gradient(135deg, var(--pink), var(--accent), var(--mint));
+  }
+  .slide__icon span {
+    display: grid;
+    place-items: center;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: var(--card);
+    font-size: 20px;
+  }
+  h2 { font-size: clamp(24px, 4vw, 32px); }
+</style>

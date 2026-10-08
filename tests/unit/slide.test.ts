@@ -1,0 +1,25 @@
+import { describe, expect, it } from 'vitest';
+import Slide from '../../src/components/Slide.astro';
+import { SLIDES } from '../../src/data/slides';
+import { render } from './render';
+
+describe('Slide', () => {
+  it('renders id, tone, section, legacy anchor and a labelling h2', async () => {
+    const html = await render(Slide, { ...SLIDES[6] }, { default: '<p>x</p>' });
+    expect(html).toMatch(/<section[^>]*id="slide-7"/);
+    expect(html).toMatch(/<section[^>]*class="[^"]*slide--yellow/);
+    expect(html).toContain('data-section="events"');
+    expect(html).toContain('data-slide');
+    expect(html).toMatch(/<span[^>]*id="events"/);
+    const labelledby = /aria-labelledby="([^"]+)"/.exec(html)![1];
+    expect(html).toMatch(new RegExp(`<h2[^>]*id="${labelledby}"[^>]*>[\s\S]*Events`));
+    expect(html).toContain('<p>x</p>');
+  });
+
+  it('hides the header for the profile slide and labels it instead', async () => {
+    const html = await render(Slide, { ...SLIDES[0], hideHeader: true }, { default: '<p>x</p>' });
+    expect(html).not.toContain('<h2');
+    expect(html).toContain('aria-label="Thuy Anh Phi"');
+    expect(html).not.toContain('aria-labelledby');
+  });
+});
