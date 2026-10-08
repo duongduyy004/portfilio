@@ -61,7 +61,7 @@ test.describe('reduced motion', () => {
 
   test('reduced motion shows final stats', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('.profile [data-count="+267%"]')).toHaveText('+267%');
+    await expect(page.locator('.profile [data-count="+267%"] .sr-only')).toHaveText('+267%');
   });
 });
 

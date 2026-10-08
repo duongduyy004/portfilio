@@ -38,6 +38,13 @@ describe('ProfileHeader', () => {
     const html = await render(ProfileHeader, headerProps);
     for (const v of ['6M+', '+267%', '160K']) expect(html).toContain(`>${v}<`);
   });
+  it('renders stats as an aria-hidden odometer with the real value for screen readers', async () => {
+    const html = await render(ProfileHeader, headerProps);
+    expect(html).toMatch(/<span class="sr-only"[^>]*>\+267%<\/span>/);
+    const odo = /<span class="odo"[^>]*aria-hidden="true"[^>]*>([\s\S]*?)<span class="stat__label/.exec(html.slice(html.indexOf('data-count="+267%"')))!;
+    expect(odo[1].match(/class="odo__col"/g)).toHaveLength(3);
+  });
+
   it('hides Download CV without a cv url', async () => {
     const html = await render(ProfileHeader, headerProps);
     expect(html).not.toContain('Download CV');

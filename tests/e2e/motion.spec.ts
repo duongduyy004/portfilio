@@ -39,3 +39,52 @@ test.describe('word-reveal headings', () => {
     });
   });
 });
+
+// each rolling strip must rest at -digit em (strip translated so the right digit shows)
+async function odometerSettled(page: Page, value: string) {
+  const stat = page.locator(`[data-count="${value}"]`).first();
+  await expect(stat.locator('.sr-only')).toHaveText(value);
+  await expect
+    .poll(() =>
+      stat.locator('.odo__col').evaluateAll((cols) =>
+        cols.every((c) => {
+          const strip = c.querySelector<HTMLElement>('.odo__strip')!;
+          const d = Number(getComputedStyle(c).getPropertyValue('--d'));
+          const em = parseFloat(getComputedStyle(c).fontSize);
+          const y = new DOMMatrix(getComputedStyle(strip).transform).f || parseFloat(getComputedStyle(strip).translate.split(' ')[1] ?? '0');
+          return Math.abs(y + d * em) <= 1;
+        }),
+      ),
+    )
+    .toBe(true);
+}
+
+test.describe('odometer stats', () => {
+  test('odometer ends on the right digits', async ({ page }) => {
+    await page.goto('/');
+    await goSlide(page, 2);
+    await odometerSettled(page, '687,370');
+  });
+
+  test('odometer ends correct after a deep link', async ({ page }) => {
+    await page.goto('/#slide-2');
+    await expect(counter(page)).toHaveText('02 / 10');
+    await odometerSettled(page, '+209%');
+  });
+
+  test.describe('reduced motion', () => {
+    test.use({ reducedMotion: 'reduce' });
+    test('digits are final immediately', async ({ page }) => {
+      await page.goto('/');
+      await odometerSettled(page, '+267%');
+    });
+  });
+
+  test.describe('without JavaScript', () => {
+    test.use({ javaScriptEnabled: false });
+    test('digits are final', async ({ page }) => {
+      await page.goto('/');
+      await odometerSettled(page, '6M+');
+    });
+  });
+});

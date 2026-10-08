@@ -1,5 +1,6 @@
 ---
 import type { Stat } from '../data/types';
+import { digitColumns } from '../lib/motion';
 
 interface Props {
   stat: Stat;
@@ -7,10 +8,26 @@ interface Props {
 }
 
 const { stat, size = 'md' } = Astro.props;
+const cols = digitColumns(stat.value);
+let digitIndex = 0;
 ---
 
-<span class:list={['stat', `stat--${size}`]}>
-  <span class="stat__value" data-count={stat.value}>{stat.value}</span>
+<span class:list={['stat', `stat--${size}`]} data-count={stat.value}>
+  <span class="stat__value">
+    <span class="sr-only">{stat.value}</span>
+    <!-- digits roll into place (spec 3.5); final positions are the default, so no-JS and reduced motion show the value -->
+    <span class="odo" aria-hidden="true">
+      {cols.map((c) =>
+        'digit' in c ? (
+          <span class="odo__col" style={`--d:${c.digit};--i:${digitIndex++}`}>
+            <span class="odo__strip">{[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((n) => <span>{n}</span>)}</span>
+          </span>
+        ) : (
+          <span class="odo__static">{c.static}</span>
+        ),
+      )}
+    </span>
+  </span>
   <span class="stat__label">{stat.label}</span>
 </span>
 
@@ -24,41 +41,37 @@ const { stat, size = 'md' } = Astro.props;
   .stat--lg .stat__value { font-size: clamp(26px, 6vw, 34px); }
   .stat--md .stat__value { font-size: clamp(20px, 4vw, 24px); }
   .stat__label { font-size: 13px; color: var(--muted); }
+
+  .odo { display: inline-flex; line-height: 1; white-space: nowrap; }
+  .odo__col { display: inline-block; height: 1em; overflow: hidden; }
+  .odo__strip { display: block; translate: 0 calc(var(--d) * -1em); }
+  .odo__strip > span { display: block; height: 1em; }
+  @media (prefers-reduced-motion: no-preference) {
+    :global(.odo--armed) .odo__strip { translate: 0 0; }
+    :global(.odo--run) .odo__strip {
+      translate: 0 calc(var(--d) * -1em);
+      transition: translate 1.2s cubic-bezier(0.2, 0.8, 0.2, 1) calc(var(--i) * 70ms);
+    }
+  }
 </style>
 
 <script>
-  import { formatStat, parseStat } from '../lib/stat';
-
-  const DURATION = 1200;
-  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-
-  // when cards drop in on scroll, start counting as the card lands
-  const LAND_DELAY = document.documentElement.classList.contains('reveal-on') ? 250 : 0;
-
-  function animate(el: HTMLElement) {
-    const parsed = parseStat(el.dataset.count ?? '');
-    if (!parsed) return;
-    const start = performance.now() + LAND_DELAY;
-    const tick = (now: number) => {
-      const t = Math.max(0, Math.min(1, (now - start) / DURATION));
-      const eased = 1 - Math.pow(1 - t, 3);
-      el.textContent = t < 1 ? formatStat(parsed, parsed.number * eased) : el.dataset.count!;
-      if (t < 1) requestAnimationFrame(tick);
-    };
-    requestAnimationFrame(tick);
-  }
-
-  if (!reduce) {
+  // arm (reset strips to 0) only when motion is allowed, then roll once the stat is on screen
+  if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    const odos = [...document.querySelectorAll<HTMLElement>('.odo')];
+    odos.forEach((o) => o.classList.add('odo--armed'));
     const observer = new IntersectionObserver(
       (entries) => {
         for (const e of entries) {
           if (!e.isIntersecting) continue;
           observer.unobserve(e.target);
-          animate(e.target as HTMLElement);
+          const odo = e.target as HTMLElement;
+          // let the armed position paint first so the transition has somewhere to run from
+          requestAnimationFrame(() => requestAnimationFrame(() => odo.classList.replace('odo--armed', 'odo--run')));
         }
       },
       { threshold: 0.6 },
     );
-    document.querySelectorAll<HTMLElement>('[data-count]').forEach((el) => observer.observe(el));
+    odos.forEach((o) => observer.observe(o));
   }
 </script>
