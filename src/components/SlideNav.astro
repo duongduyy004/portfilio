@@ -110,9 +110,12 @@ const { slides } = Astro.props;
   const canScrollUp = (s: HTMLElement) => s.scrollTop > 0;
 
   let current = -1;
+  // where an in-flight move is heading, so quick repeated presses step from there, not from `current`
+  let target = -1;
+  const pos = () => (target >= 0 ? target : current);
 
   function goTo(i: number, focus = true) {
-    const target = Math.max(0, Math.min(last, i));
+    target = Math.max(0, Math.min(last, i));
     deck.scrollTo({ left: target * deck.clientWidth, behavior });
     if (focus) slides[target].focus({ preventScroll: true });
   }
@@ -143,11 +146,8 @@ const { slides } = Astro.props;
     if (i === current) return;
     const first = current === -1;
     current = i;
+    accumulated = 0;
     const slide = slides[i];
-    // slides you've left start at the top next time; never touch the one being read
-    slides.forEach((s, j) => {
-      if (j !== i && s.scrollTop !== 0) s.scrollTop = 0;
-    });
     if (counter) counter.textContent = counterText(i, slides.length);
     dots.forEach((d, j) => (j === i ? d.setAttribute('aria-current', 'true') : d.removeAttribute('aria-current')));
     tabs.forEach((t) =>
@@ -155,14 +155,36 @@ const { slides } = Astro.props;
     );
     updateArrows();
     updateHint(slide);
-    if (hashReady) history.replaceState(null, '', `#${slide.id}`);
+    if (hashReady) {
+      try {
+        history.replaceState(null, '', `#${slide.id}`);
+      } catch {
+        // Safari rate-limits replaceState (100 per 10s); the URL is a nicety, navigation isn't
+      }
+    }
     if (!first) announce(i);
   }
+
+  // once the deck stops moving: slides you've left start at the top next time. Doing this only on
+  // settle keeps a half-swiped (or snapped-back) slide exactly where the reader left it.
+  function settle() {
+    target = -1;
+    slides.forEach((s, j) => {
+      if (j !== current && s.scrollTop !== 0) s.scrollTop = 0;
+    });
+  }
+  let settleTimer: number | undefined;
+  deck.addEventListener('scrollend', () => {
+    clearTimeout(settleTimer);
+    settle();
+  });
 
   let ticking = false;
   deck.addEventListener(
     'scroll',
     () => {
+      clearTimeout(settleTimer);
+      settleTimer = window.setTimeout(settle, 150); // fallback where scrollend isn't supported
       if (ticking) return;
       ticking = true;
       requestAnimationFrame(() => {
@@ -182,8 +204,8 @@ const { slides } = Astro.props;
   });
   wide.addEventListener('change', updateArrows);
 
-  prevBtn?.addEventListener('click', () => goTo(current - 1));
-  nextBtn?.addEventListener('click', () => goTo(current + 1));
+  prevBtn?.addEventListener('click', () => goTo(pos() - 1));
+  nextBtn?.addEventListener('click', () => goTo(pos() + 1));
 
   // dots and tabs are plain anchors (they work without JS); with JS, slide there smoothly instead
   document.addEventListener('click', (e) => {
@@ -210,17 +232,17 @@ const { slides } = Astro.props;
       return;
     }
     e.preventDefault();
-    if (action === 'next') return goTo(current + 1);
-    if (action === 'prev') return goTo(current - 1);
+    if (action === 'next') return goTo(pos() + 1);
+    if (action === 'prev') return goTo(pos() - 1);
     if (action === 'first') return goTo(0);
     if (action === 'last') return goTo(last);
     const page = slide.clientHeight * 0.85;
     if (action === 'page-next') {
       if (canScrollDown(slide)) slide.scrollBy({ top: page, behavior });
-      else goTo(current + 1);
+      else goTo(pos() + 1);
     } else {
       if (canScrollUp(slide)) slide.scrollBy({ top: -page, behavior });
-      else goTo(current - 1);
+      else goTo(pos() - 1);
     }
   });
 
@@ -238,12 +260,10 @@ const { slides } = Astro.props;
       const up = canScrollUp(slide);
       const now = performance.now();
       if (now < cooldownUntil) {
-        // swallow momentum at the edge so one flick can't skip several slides; a gesture
-        // that keeps going keeps the cooldown alive until it pauses for 250ms
-        if (!((dy > 0 && down) || (dy < 0 && up))) {
-          e.preventDefault();
-          cooldownUntil = Math.max(cooldownUntil, now + 250);
-        }
+        // after a slide change, swallow the rest of the gesture entirely: momentum must neither
+        // move another slide nor scroll the slide just arrived on. It ends after a 250ms pause.
+        e.preventDefault();
+        cooldownUntil = Math.max(cooldownUntil, now + 250);
         return;
       }
       const step = wheelStep(dy, down, up, accumulated);
@@ -255,7 +275,7 @@ const { slides } = Astro.props;
       accumulated = step.accumulated;
       if (step.move !== 0) {
         cooldownUntil = performance.now() + 700;
-        goTo(current + step.move);
+        goTo(pos() + step.move);
       }
     },
     { passive: false },

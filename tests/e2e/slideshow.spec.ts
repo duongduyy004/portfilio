@@ -70,6 +70,72 @@ test('arrows move slides', async ({ page }) => {
   await expect(next).toBeHidden();
 });
 
+test.describe('final-review fixes', () => {
+  test('leaving a scrolled slide does not reset it mid-transit', async ({ page }) => {
+    await page.goto('/');
+    await goSlide(page, 8);
+    await slide(page, 8).evaluate((e) => e.scrollTo({ top: 300 }));
+    await page.waitForTimeout(300);
+    // sample slide 8 every frame while it is still on screen during a smooth move to slide 9
+    const resetWhileVisible = await page.evaluate(
+      () =>
+        new Promise<boolean>((resolve) => {
+          const deck = document.querySelector<HTMLElement>('[data-deck]')!;
+          const s8 = document.querySelector<HTMLElement>('#slide-8')!;
+          let bad = false;
+          const tick = () => {
+            const visible = 8 - deck.scrollLeft / deck.clientWidth; // fraction of slide 8 on screen
+            if (visible > 0.05 && s8.scrollTop < 300) bad = true;
+            if (deck.scrollLeft >= 8 * deck.clientWidth - 1) resolve(bad);
+            else requestAnimationFrame(tick);
+          };
+          document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
+          requestAnimationFrame(tick);
+        }),
+    );
+    expect(resetWhileVisible).toBe(false);
+    await expect(counter(page)).toHaveText('09 / 10');
+    await expect.poll(() => scrollTop(page, 8)).toBe(0); // reset once settled
+  });
+
+  test('trackpad momentum does not scroll the slide you arrive on', async ({ page }) => {
+    await page.goto('/');
+    await goSlide(page, 7);
+    await slide(page, 7).evaluate((e) => e.scrollTo({ top: e.scrollHeight }));
+    await page.waitForTimeout(300);
+    // trusted wheel input (has a default scroll action), decaying like trackpad momentum
+    const client = await page.context().newCDPSession(page);
+    const vp = page.viewportSize()!;
+    for (let i = 0; i < 40; i++) {
+      await client.send('Input.dispatchMouseEvent', {
+        type: 'mouseWheel', x: vp.width / 2, y: vp.height / 2, deltaX: 0, deltaY: Math.max(4, 120 * Math.pow(0.92, i)),
+      });
+    }
+    await page.waitForTimeout(900);
+    await expect(counter(page)).toHaveText('08 / 10');
+    expect(await scrollTop(page, 8)).toBe(0);
+  });
+
+  test('two quick presses move two slides', async ({ page }) => {
+    await page.goto('/');
+    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('ArrowRight');
+    await expect(counter(page)).toHaveText('03 / 10');
+  });
+
+  test('a throwing history.replaceState (Safari rate limit) does not break navigation', async ({ page }) => {
+    await page.addInitScript(() => {
+      history.replaceState = () => {
+        throw new DOMException('Attempt to use history.replaceState() more than 100 times per 10 seconds', 'SecurityError');
+      };
+    });
+    await page.goto('/');
+    await page.keyboard.press('End');
+    await expect(counter(page)).toHaveText('10 / 10');
+    await expect(page.locator('[aria-live]')).toHaveText('Slide 10 of 10: Contact');
+  });
+});
+
 test('dots are named, tappable targets', async ({ page }) => {
   await page.goto('/');
   const dots = page.locator('[data-dot]');
