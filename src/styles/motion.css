@@ -1,8 +1,9 @@
 /* Modern motion layer (spec: docs/superpowers/specs/2026-10-08-motion-design.md).
    Everything here is off under prefers-reduced-motion; final states are the defaults. */
 
-/* ---------- 3.2 heading word reveal (triggered by Reveal's .is-in) ---------- */
-@media (prefers-reduced-motion: no-preference) {
+/* ---------- 3.2 heading word reveal (triggered by Reveal's .is-in) ----------
+   screen only: a printout must show every heading, visited or not */
+@media screen and (prefers-reduced-motion: no-preference) {
   .reveal-on [data-reveal='words'] .word {
     display: inline-block;
     opacity: 0;
@@ -105,7 +106,32 @@
 .ticker__sep { padding-left: 18px; color: var(--yellow); }
 @media (prefers-reduced-motion: no-preference) {
   .ticker__track { animation: ticker 30s linear infinite; }
-  .ticker:hover .ticker__track { animation-play-state: paused; }
+  .ticker:hover .ticker__track,
+  .ticker--paused .ticker__track { animation-play-state: paused; }
+}
+/* WCAG 2.2.2: moving content needs a pause control that works without a mouse */
+.ticker-wrap { position: relative; margin-top: 24px; }
+.ticker-wrap .ticker { margin-top: 0; padding-right: 52px; }
+.ticker__toggle {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  margin-top: -16px;
+  width: 32px;
+  height: 32px;
+  display: grid;
+  place-items: center;
+  font: inherit;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  background: var(--yellow);
+  border: var(--border);
+  border-radius: 50%;
+  cursor: pointer;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ticker__toggle { display: none; } /* nothing moves, nothing to pause */
 }
 @media (prefers-reduced-motion: reduce) {
   .ticker { overflow-x: auto; }

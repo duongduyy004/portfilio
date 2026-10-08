@@ -262,3 +262,33 @@ test.describe('swipe-linked transitions', () => {
     });
   });
 });
+
+test.describe('final-review fixes', () => {
+  test('printing shows every heading and stat in its final state', async ({ page }) => {
+    await page.goto('/');
+    await page.emulateMedia({ media: 'print' });
+    // slides 9 and 10 were never visited, so their reveal never ran
+    const words = await page.locator('#slide-9 h2 .word, #slide-10 h2 .word').evaluateAll((ws) =>
+      ws.map((w) => ({ op: getComputedStyle(w).opacity, f: getComputedStyle(w).filter })),
+    );
+    expect(words.length).toBeGreaterThan(0);
+    for (const w of words) {
+      expect(w.op).toBe('1');
+      expect(w.f).toBe('none');
+    }
+    await odometerSettled(page, '687,370'); // slide 2, never visited
+  });
+
+  test('the ticker can be paused without a mouse', async ({ page }) => {
+    await page.goto('/');
+    const button = page.getByRole('button', { name: 'Pause ticker' });
+    const track = page.locator('#slide-1 .ticker__track');
+    await button.focus();
+    await page.keyboard.press('Enter');
+    await expect(button).toHaveAttribute('aria-pressed', 'true');
+    await expect.poll(() => track.evaluate((e) => getComputedStyle(e).animationPlayState)).toBe('paused');
+    await page.keyboard.press('Enter');
+    await expect(button).toHaveAttribute('aria-pressed', 'false');
+    await expect.poll(() => track.evaluate((e) => getComputedStyle(e).animationPlayState)).toBe('running');
+  });
+});

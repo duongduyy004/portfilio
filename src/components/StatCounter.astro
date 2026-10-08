@@ -46,7 +46,8 @@ let digitIndex = 0;
   .odo__col { display: inline-block; height: 1em; overflow: hidden; }
   .odo__strip { display: block; translate: 0 calc(var(--d) * -1em); }
   .odo__strip > span { display: block; height: 1em; }
-  @media (prefers-reduced-motion: no-preference) {
+  /* screen only: a printout shows the real digits even for stats never scrolled into view */
+  @media screen and (prefers-reduced-motion: no-preference) {
     :global(.odo--armed) .odo__strip { translate: 0 0; }
     :global(.odo--run) .odo__strip {
       translate: 0 calc(var(--d) * -1em);

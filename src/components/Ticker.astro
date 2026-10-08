@@ -6,15 +6,33 @@ interface Props {
 const { items } = Astro.props;
 ---
 
-<!-- decorative: every fact here is already on the page -->
-<div class="ticker" aria-hidden="true">
-  <div class="ticker__track">
-    {[0, 1].map(() => (
-      <span class="ticker__run">
-        {items.map((item) => (
-          <span class="ticker__item">{item}<span class="ticker__sep">✦</span></span>
-        ))}
-      </span>
-    ))}
+<div class="ticker-wrap">
+  <!-- decorative: every fact here is already on the page -->
+  <div class="ticker" aria-hidden="true">
+    <div class="ticker__track">
+      {[0, 1].map(() => (
+        <span class="ticker__run">
+          {items.map((item) => (
+            <span class="ticker__item">{item}<span class="ticker__sep">✦</span></span>
+          ))}
+        </span>
+      ))}
+    </div>
   </div>
+  <button type="button" class="ticker__toggle" aria-label="Pause ticker" aria-pressed="false">❚❚</button>
 </div>
+
+<script>
+  // pause/resume for keyboard and touch users (hover already pauses for mice)
+  for (const wrap of document.querySelectorAll<HTMLElement>('.ticker-wrap')) {
+    const ticker = wrap.querySelector<HTMLElement>('.ticker')!;
+    const toggle = wrap.querySelector<HTMLButtonElement>('.ticker__toggle')!;
+    const set = (paused: boolean) => {
+      ticker.classList.toggle('ticker--paused', paused);
+      toggle.setAttribute('aria-pressed', String(paused));
+      toggle.textContent = paused ? '▶' : '❚❚';
+    };
+    toggle.addEventListener('click', () => set(toggle.getAttribute('aria-pressed') !== 'true'));
+    ticker.addEventListener('click', () => set(toggle.getAttribute('aria-pressed') !== 'true'));
+  }
+</script>
