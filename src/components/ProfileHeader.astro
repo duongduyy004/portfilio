@@ -1,7 +1,7 @@
 ---
-import { Image } from 'astro:assets';
 import type { Photo, Stat } from '../data/types';
 import StatCounter from './StatCounter.astro';
+import ZoomImage from './ZoomImage.astro';
 
 interface Props {
   name: string;
@@ -20,7 +20,7 @@ const chipColours = ['chip--yellow', 'chip--mint', 'chip--pink'];
 <header class="profile container">
   <div class="profile__card card" data-reveal="drop">
     <div class="profile__avatar">
-      <Image src={avatar.src} alt={avatar.alt} widths={[168, 336]} sizes="168px" loading="eager" fetchpriority="high" />
+      <ZoomImage class="profile__avatar-link" photo={avatar} caption={name} widths={[168, 336]} sizes="168px" loading="eager" fetchpriority="high" />
     </div>
     <div class="profile__body">
       <h1>{name}</h1>
@@ -56,7 +56,8 @@ const chipColours = ['chip--yellow', 'chip--mint', 'chip--pink'];
     padding: 5px;
     background: linear-gradient(135deg, var(--pink), var(--accent), var(--mint));
   }
-  .profile__avatar img {
+  .profile__avatar :global(.zoom) { height: 100%; border-radius: 50%; }
+  .profile__avatar :global(img) {
     width: 100%;
     height: 100%;
     border-radius: 50%;

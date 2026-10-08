@@ -1,7 +1,7 @@
 ---
-import { Image } from 'astro:assets';
 import type { Photo, Stat } from '../data/types';
 import StatCounter from './StatCounter.astro';
+import ZoomImage from './ZoomImage.astro';
 
 interface Props {
   title: string;
@@ -23,7 +23,7 @@ const { title, stats, text, image } = Astro.props;
     <p class="highlight__text">{text}</p>
   </div>
   <figure class="highlight__figure">
-    <Image src={image.src} alt={image.alt} widths={[480, 960]} sizes="(min-width: 900px) 480px, 90vw" />
+    <ZoomImage photo={image} caption={`${title} — ${image.alt}`} widths={[480, 960]} sizes="(min-width: 900px) 480px, 90vw" />
   </figure>
 </article>
 
@@ -55,7 +55,8 @@ const { title, stats, text, image } = Astro.props;
     border-top: var(--border);
     background: #EDEDED;
   }
-  .highlight__figure img { width: 100%; height: 100%; object-fit: cover; object-position: left top; }
+  .highlight__figure :global(.zoom) { height: 100%; }
+  .highlight__figure :global(img) { width: 100%; height: 100%; object-fit: cover; object-position: left top; }
 
   @media (min-width: 900px) {
     .highlight { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); }

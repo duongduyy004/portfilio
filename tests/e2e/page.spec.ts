@@ -68,7 +68,7 @@ test.describe('reduced motion', () => {
 test('card photos keep their crop ratio', async ({ page }) => {
   await page.goto('/');
   const ratios = await page
-    .locator('.role__photos img, .event__button img')
+    .locator('.role__photos img, .event__photo img')
     .evaluateAll((imgs) => imgs.map((i) => i.getBoundingClientRect().height / i.getBoundingClientRect().width));
   expect(ratios.length).toBeGreaterThan(0);
   for (const r of ratios) expect(r).toBeCloseTo(0.75, 1);

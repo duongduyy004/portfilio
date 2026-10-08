@@ -1,5 +1,4 @@
 ---
-import { Image } from 'astro:assets';
 import ActivityCard from '../components/ActivityCard.astro';
 import ContactCard from '../components/ContactCard.astro';
 import EducationList from '../components/EducationList.astro';
@@ -14,6 +13,7 @@ import Section from '../components/Section.astro';
 import TabBar from '../components/TabBar.astro';
 import VideoEmbed from '../components/VideoEmbed.astro';
 import VideoModal from '../components/VideoModal.astro';
+import ZoomImage from '../components/ZoomImage.astro';
 import Base from '../layouts/Base.astro';
 import { profile } from '../data/profile';
 import { SECTIONS } from '../data/types';
@@ -72,7 +72,7 @@ const section = (id: (typeof SECTIONS)[number]['id']) => ({
       <div class="grid grid--photos">
         {profile.photos.map((p) => (
           <figure class="photo card">
-            <Image src={p.src} alt={p.alt} widths={[320, 640]} sizes="(min-width: 640px) 300px, 45vw" />
+            <ZoomImage photo={p} widths={[320, 640]} sizes="(min-width: 640px) 300px, 45vw" />
           </figure>
         ))}
       </div>
@@ -111,5 +111,5 @@ const section = (id: (typeof SECTIONS)[number]['id']) => ({
   .grid--photos { grid-template-columns: repeat(2, minmax(0, 1fr)); max-width: 640px; }
   .subhead { font-size: 20px; margin: 32px 0 14px; }
   .photo { margin: 0; }
-  .photo img { width: 100%; aspect-ratio: 1; object-fit: cover; }
+  .photo :global(img) { width: 100%; aspect-ratio: 1; object-fit: cover; }
 </style>

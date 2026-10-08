@@ -1,5 +1,6 @@
 ---
 import { Image } from 'astro:assets';
+import ZoomImage from './ZoomImage.astro';
 import type { Video } from '../data/types';
 import { embedUrl } from '../lib/embed';
 import { linkState } from '../lib/link';
@@ -44,7 +45,9 @@ const platform = { youtube: 'YouTube', tiktok: 'TikTok', link: 'link', file: '' 
       </a>
     ) : (
       <div class="video__poster video__poster--soon">
-        {posterImage && <Image src={posterImage.src} alt={posterImage.alt} widths={[320, 640]} sizes="(min-width: 960px) 340px, 90vw" />}
+        {posterImage && (
+          <ZoomImage class="video__zoom" photo={posterImage} caption={`${video.title} — ${posterImage.alt}`} widths={[320, 640]} sizes="(min-width: 960px) 340px, 90vw" />
+        )}
         <span class="video__soon">Link coming soon</span>
       </div>
     )}
@@ -91,7 +94,9 @@ const platform = { youtube: 'YouTube', tiktok: 'TikTok', link: 'link', file: '' 
     box-shadow: var(--shadow);
     font-size: 24px;
   }
-  .video__poster--soon img { filter: grayscale(.4); opacity: .85; }
+  .video__poster--soon :global(.video__zoom) { position: absolute; inset: 0; }
+  .video__poster--soon :global(img) { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: grayscale(.4); opacity: .85; }
+  .video__soon { pointer-events: none; }
   .video__soon {
     position: absolute;
     left: 12px;

@@ -1,7 +1,7 @@
 ---
-import { Image } from 'astro:assets';
 import type { Role } from '../data/types';
 import StatCounter from './StatCounter.astro';
+import ZoomImage from './ZoomImage.astro';
 
 interface Props {
   role: Role;
@@ -28,7 +28,7 @@ const { role } = Astro.props;
 
   <div class="role__photos">
     {role.photos.slice(0, 3).map((p) => (
-      <Image src={p.src} alt={p.alt} widths={[240, 480]} sizes="(min-width: 900px) 300px, 30vw" />
+      <ZoomImage photo={p} caption={`${role.company} — ${p.alt}`} widths={[240, 480]} sizes="(min-width: 900px) 300px, 30vw" />
     ))}
   </div>
 
@@ -76,7 +76,7 @@ const { role } = Astro.props;
     grid-template-columns: repeat(3, minmax(0, 1fr));
     gap: 10px;
   }
-  .role__photos img {
+  .role__photos :global(img) {
     width: 100%;
     aspect-ratio: 4 / 3;
     object-fit: cover;

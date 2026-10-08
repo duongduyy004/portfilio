@@ -8,7 +8,7 @@ describe('EventGrid', () => {
   it('renders one lightbox button per event, each with alt text and a full-size source', async () => {
     const events = profile.events.slice(0, 3);
     const html = await render(EventGrid, { events });
-    const buttons = html.match(/<button[^>]*data-lightbox[^>]*>/g) ?? [];
+    const buttons = html.match(/<a[^>]*data-lightbox[^>]*>/g) ?? [];
     expect(buttons).toHaveLength(3);
     for (const b of buttons) expect(b).toMatch(/data-full="[^"]+"/);
     const alts = [...html.matchAll(/<img[^>]*alt="([^"]*)"/g)].map((m) => m[1]);

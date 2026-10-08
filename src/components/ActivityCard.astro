@@ -1,6 +1,6 @@
 ---
-import { Image } from 'astro:assets';
 import type { Activity } from '../data/types';
+import ZoomImage from './ZoomImage.astro';
 
 interface Props {
   activity: Activity;
@@ -11,7 +11,7 @@ const { activity } = Astro.props;
 
 <article class="activity card" data-reveal="drop">
   {activity.photo && (
-    <Image src={activity.photo.src} alt={activity.photo.alt} widths={[360, 720]} sizes="(min-width: 960px) 340px, (min-width: 640px) 45vw, 90vw" />
+    <ZoomImage photo={activity.photo} caption={`${activity.title} — ${activity.photo.alt}`} widths={[360, 720]} sizes="(min-width: 960px) 340px, (min-width: 640px) 45vw, 90vw" />
   )}
   <div class="activity__body">
     <span class="activity__role">{activity.role}</span>
@@ -22,7 +22,7 @@ const { activity } = Astro.props;
 
 <style>
   .activity { display: flex; flex-direction: column; }
-  .activity img { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-bottom: var(--border); }
+  .activity :global(img) { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-bottom: var(--border); }
   .activity__body { padding: 14px 16px 18px; display: grid; gap: 6px; }
   .activity__role {
     justify-self: start;

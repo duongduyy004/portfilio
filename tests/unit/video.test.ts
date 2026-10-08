@@ -48,11 +48,14 @@ describe('VideoEmbed', () => {
     expect(html).toMatch(/<a[^>]*data-video-modal/);
   });
 
-  it('tiktok without a url says coming soon and renders no link', async () => {
+  it('tiktok without a url says coming soon, links nowhere external and opens no player', async () => {
     const html = await render(VideoEmbed, {
       video: { title: 'TikTok', kind: 'tiktok', url: undefined, poster },
     });
     expect(html).toContain('coming soon');
-    expect(html).not.toMatch(/<a[\s>]/);
+    expect(html).not.toMatch(/<a[^>]*href="https?:/);
+    expect(html).not.toContain('data-video-modal');
+    // the screenshot itself can still be enlarged
+    expect(html).toMatch(/<a[^>]*data-lightbox/);
   });
 });

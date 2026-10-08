@@ -1,0 +1,62 @@
+---
+import { getImage, Image } from 'astro:assets';
+import type { Photo } from '../data/types';
+
+interface Props {
+  photo: Photo;
+  caption?: string;
+  widths: number[];
+  sizes: string;
+  loading?: 'eager' | 'lazy';
+  fetchpriority?: 'high' | 'low' | 'auto';
+  class?: string;
+}
+
+const { photo, caption, widths, sizes, loading, fetchpriority, class: className } = Astro.props;
+const full = (await getImage({ src: photo.src, width: Math.min(1600, photo.src.width) })).src;
+---
+
+<a
+  class:list={['zoom', className]}
+  href={full}
+  data-lightbox
+  data-full={full}
+  data-alt={photo.alt}
+  data-caption={caption ?? photo.alt}
+>
+  <Image src={photo.src} alt={photo.alt} widths={widths} sizes={sizes} loading={loading} fetchpriority={fetchpriority} />
+  <span class="zoom__badge" aria-hidden="true">⤢</span>
+  <span class="sr-only">Open larger photo</span>
+</a>
+
+<style>
+  .zoom {
+    position: relative;
+    display: block;
+    cursor: zoom-in;
+    color: inherit;
+  }
+  .zoom__badge {
+    position: absolute;
+    right: 8px;
+    bottom: 8px;
+    display: grid;
+    place-items: center;
+    width: 30px;
+    height: 30px;
+    font-size: 16px;
+    font-weight: 700;
+    background: var(--card);
+    border: var(--border);
+    border-radius: 50%;
+    opacity: 0;
+    transform: scale(.7);
+    transition: opacity .15s, transform .15s;
+    pointer-events: none;
+  }
+  .zoom:hover .zoom__badge,
+  .zoom:focus-visible .zoom__badge {
+    opacity: 1;
+    transform: none;
+  }
+</style>
