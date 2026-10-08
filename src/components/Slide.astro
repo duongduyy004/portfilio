@@ -10,6 +10,7 @@ const headingId = `${id}-heading`;
 <section
   id={id}
   class:list={['slide', `slide--${tone}`]}
+  tabindex="-1"
   data-slide
   data-section={section}
   data-title={title}
@@ -26,6 +27,7 @@ const headingId = `${id}-heading`;
     )}
     <slot />
   </div>
+  <span class="slide__more" aria-hidden="true" hidden>↓ more</span>
 </section>
 
 <style>

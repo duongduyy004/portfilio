@@ -39,6 +39,8 @@ const ogImageUrl = new URL(ogImage, site).href;
     <meta name="twitter:description" content={description} />
     <meta name="twitter:image" content={ogImageUrl} />
     <script is:inline>
+      // The slide deck takes over scrolling only when JS runs (see global.css).
+      document.documentElement.classList.add('deck-on');
       // Turn scroll animations on before first paint, unless the visitor prefers reduced motion.
       // If the reveal script never reports ready, show everything rather than leave it hidden.
       if (!matchMedia('(prefers-reduced-motion: reduce)').matches) {

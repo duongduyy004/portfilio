@@ -92,7 +92,7 @@ a { color: inherit; }
 
 .muted { color: var(--muted); }
 
-/* ---------- slides: full-bleed tones, gentle snapping (see Slide.astro) ---------- */
+/* ---------- deck: horizontal full-screen slides (see Deck.astro, Slide.astro, SlideNav.astro) ---------- */
 :root {
   --tone-lavender: #F3EFFF;
   --tone-yellow: #FFE45C;
@@ -100,20 +100,48 @@ a { color: inherit; }
   --tone-pink: #FF7AB6;
   --tone-lilac: #CBBEFF;
 }
-html {
-  scroll-snap-type: y proximity;
-  scroll-padding-top: var(--tabbar-h);
+/* with JS the deck is the only scroller; without it the page keeps its normal overflow */
+html.deck-on,
+html.deck-on body { height: 100%; overflow: hidden; }
+.deck {
+  display: flex;
+  margin-top: var(--tabbar-h); /* below the fixed tab bar */
+  height: calc(100dvh - var(--tabbar-h));
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  overscroll-behavior-x: contain;
 }
+.deck-on .deck { scrollbar-width: none; }
+.deck-on .deck::-webkit-scrollbar { display: none; }
 .slide {
   position: relative;
+  flex: 0 0 100%;
+  height: 100%;
   display: flex;
-  align-items: center;
-  min-height: calc(100dvh - var(--tabbar-h));
-  padding-block: 40px;
+  flex-direction: column;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
   scroll-snap-align: start;
+  scroll-snap-stop: always;
 }
-.slide__inner { width: 100%; }
+.slide:focus { outline: none; }
+.slide__inner { width: 100%; margin-block: auto; padding-block: 32px 72px; }
 .slide__anchor { position: absolute; top: 0; }
+.slide__more {
+  position: sticky;
+  bottom: 64px;
+  align-self: center;
+  flex: none;
+  font-size: 13px;
+  font-weight: 700;
+  background: var(--card);
+  border: var(--border);
+  border-radius: 999px;
+  padding: 3px 12px;
+  pointer-events: none;
+}
+.slide__more[hidden] { display: none; }
 .slide--lavender { background: var(--tone-lavender); }
 .slide--yellow { background: var(--tone-yellow); }
 .slide--mint { background: var(--tone-mint); }
@@ -121,9 +149,11 @@ html {
 .slide--lilac { background: var(--tone-lilac); }
 
 @media print {
-  html { scroll-snap-type: none; }
-  .slide { min-height: auto; }
+  html.deck-on, html.deck-on body { height: auto; overflow: visible; }
+  .deck { display: block; height: auto; overflow: visible; margin-top: 0; }
+  .slide { height: auto; overflow: visible; }
   .slide + .slide { break-before: page; }
+  .slide__more, .deck__arrow, .slidenav, .tabbar { display: none !important; }
 }
 
 /* ---------- modal shell: transparent <dialog>, close button outside the framed box ---------- */

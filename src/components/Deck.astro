@@ -1,0 +1,33 @@
+<main class="deck" data-deck>
+  <slot />
+  <!-- shown by SlideNav's script on ≥640px screens -->
+  <button type="button" class="deck__arrow deck__arrow--prev" data-deck-prev aria-label="Previous slide" hidden>‹</button>
+  <button type="button" class="deck__arrow deck__arrow--next" data-deck-next aria-label="Next slide" hidden>›</button>
+</main>
+
+<style>
+  .deck__arrow {
+    position: fixed;
+    top: calc(var(--tabbar-h) + (100dvh - var(--tabbar-h)) / 2);
+    translate: 0 -50%;
+    z-index: 9;
+    display: grid;
+    place-items: center;
+    width: 48px;
+    height: 48px;
+    font: inherit;
+    font-size: 28px;
+    font-weight: 700;
+    line-height: 1;
+    color: var(--ink);
+    background: var(--card);
+    border: var(--border);
+    border-radius: 50%;
+    box-shadow: var(--shadow);
+    cursor: pointer;
+  }
+  .deck__arrow[hidden] { display: none; }
+  .deck__arrow--prev { left: 16px; }
+  .deck__arrow--next { right: 16px; }
+  .deck__arrow:hover { transform: translateY(2px); box-shadow: 0 2px 0 var(--ink); }
+</style>
