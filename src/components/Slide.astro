@@ -18,6 +18,7 @@ const headingId = `${id}-heading`;
   aria-labelledby={hideHeader ? undefined : headingId}
   aria-label={hideHeader ? title : undefined}
 >
+  <div class="slide__blobs" aria-hidden="true"><span></span><span></span><span></span></div>
   {anchor && <span id={anchor} class="slide__anchor"></span>}
   <div class="slide__inner container">
     {!hideHeader && (

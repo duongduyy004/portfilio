@@ -38,3 +38,76 @@
   /* ---------- 3.4 magnetic controls ---------- */
   [data-magnet] { transition: translate 0.25s ease; }
 }
+
+/* ---------- 3.6 ambient blobs (one sticky, zero-height-impact layer per slide) ---------- */
+.slide--lavender { --tone: var(--tone-lavender); }
+.slide--yellow { --tone: var(--tone-yellow); }
+.slide--mint { --tone: var(--tone-mint); }
+.slide--pink { --tone: var(--tone-pink); }
+.slide--lilac { --tone: var(--tone-lilac); }
+.slide__blobs {
+  /* sticky + matching negative margin: always covers the visible deck, adds nothing to scroll height */
+  position: sticky;
+  top: 0;
+  flex: none;
+  height: calc(100dvh - var(--tabbar-h));
+  margin-bottom: calc(-1 * (100dvh - var(--tabbar-h)));
+  overflow: hidden;
+  pointer-events: none;
+  z-index: 0;
+}
+.slide__blobs span {
+  position: absolute;
+  width: 50vmax;
+  height: 50vmax;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.18;
+  will-change: translate, scale; /* own layer: drifting doesn't repaint the blur */
+}
+.slide__blobs span:nth-child(1) { top: -18%; left: -12%; background: color-mix(in srgb, var(--tone) 60%, white); }
+.slide__blobs span:nth-child(2) { bottom: -22%; right: -12%; background: color-mix(in srgb, var(--tone) 70%, var(--ink)); }
+.slide__blobs span:nth-child(3) { top: 30%; left: 40%; width: 40vmax; height: 40vmax; background: color-mix(in srgb, var(--tone) 50%, white); }
+@media (max-width: 639px) {
+  .slide__blobs span:nth-child(3) { display: none; }
+}
+.slide__inner,
+.slide__more { position: relative; z-index: 1; }
+.slide__more { position: sticky; }
+
+@media (prefers-reduced-motion: no-preference) {
+  .slide__blobs span:nth-child(1) { animation: blob-a 22s ease-in-out infinite alternate; }
+  .slide__blobs span:nth-child(2) { animation: blob-b 26s ease-in-out infinite alternate; }
+  .slide__blobs span:nth-child(3) { animation: blob-c 30s ease-in-out infinite alternate; }
+  /* only the slide on screen drifts (SlideNav marks it); without JS none is marked, so all drift */
+  .deck:has([data-current]) .slide:not([data-current]) .slide__blobs span { animation-play-state: paused; }
+}
+@keyframes blob-a { to { translate: 12vmax 8vmax; scale: 1.15; } }
+@keyframes blob-b { to { translate: -10vmax -6vmax; scale: 0.9; } }
+@keyframes blob-c { to { translate: -14vmax 10vmax; scale: 1.2; } }
+
+/* ---------- 3.7 skills ticker ---------- */
+.ticker {
+  margin-top: 24px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  background: var(--ink);
+  color: #fff;
+  border: var(--border);
+  border-radius: 999px;
+  font-weight: 600;
+  font-size: 15px;
+}
+.ticker__track { display: flex; width: max-content; white-space: nowrap; }
+.ticker__item { padding-left: 18px; }
+.ticker__sep { padding-left: 18px; color: var(--yellow); }
+@media (prefers-reduced-motion: no-preference) {
+  .ticker__track { animation: ticker 30s linear infinite; }
+  .ticker:hover .ticker__track { animation-play-state: paused; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .ticker { overflow-x: auto; }
+}
+@keyframes ticker { to { translate: -50% 0; } }

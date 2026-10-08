@@ -148,6 +148,7 @@ const { slides } = Astro.props;
     current = i;
     accumulated = 0;
     const slide = slides[i];
+    slides.forEach((s, j) => s.toggleAttribute('data-current', j === i));
     if (counter) counter.textContent = counterText(i, slides.length);
     dots.forEach((d, j) => (j === i ? d.setAttribute('aria-current', 'true') : d.removeAttribute('aria-current')));
     tabs.forEach((t) =>

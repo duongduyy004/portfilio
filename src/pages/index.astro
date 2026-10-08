@@ -14,6 +14,7 @@ import RoleCard from '../components/RoleCard.astro';
 import Slide from '../components/Slide.astro';
 import SlideNav from '../components/SlideNav.astro';
 import TabBar from '../components/TabBar.astro';
+import Ticker from '../components/Ticker.astro';
 import VideoEmbed from '../components/VideoEmbed.astro';
 import VideoModal from '../components/VideoModal.astro';
 import ZoomImage from '../components/ZoomImage.astro';
@@ -44,6 +45,7 @@ const [eventsSlide, videosSlide, beyondSlide, contactSlide] = rest.slice(profile
         stats={profile.stats}
         cvUrl={profile.contact.cv}
       />
+      <Ticker items={[...profile.stats.map((s) => `${s.value} ${s.label}`), ...profile.skills]} />
     </Slide>
 
     <Slide {...careersSlide}>

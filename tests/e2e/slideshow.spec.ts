@@ -155,11 +155,13 @@ test('dot click moves to its slide', async ({ page }) => {
   await expect(page.locator('[data-dot="7"]')).toHaveAttribute('aria-current', 'true');
 });
 
-// slide 1 fits the screen and slide 8 overflows it at both test sizes (measured)
+// slide 10 fits the screen and slide 8 overflows it at both test sizes (measured; the profile
+// slide grew past a phone screen when the ticker was added)
 test("wheel at a short slide's edge moves on", async ({ page }) => {
-  await page.goto('/');
-  await wheelAtCentre(page, 120);
-  await expect(counter(page)).toHaveText('02 / 10');
+  await page.goto('/#slide-10');
+  await expect(counter(page)).toHaveText('10 / 10');
+  await wheelAtCentre(page, -120);
+  await expect(counter(page)).toHaveText('09 / 10');
 });
 
 test('wheel inside a tall slide scrolls it', async ({ page }) => {
@@ -171,18 +173,19 @@ test('wheel inside a tall slide scrolls it', async ({ page }) => {
 });
 
 test('a long wheel burst moves one slide', async ({ page }) => {
-  await page.goto('/');
+  await page.goto('/#slide-10');
+  await expect(counter(page)).toHaveText('10 / 10');
   // fire the burst in-page on a fixed 30ms cadence (like trackpad momentum); Playwright
   // round-trips under load can leave >250ms gaps, which is two gestures, not one
   await page.evaluate(async () => {
     const deck = document.querySelector('[data-deck]')!;
     for (let i = 0; i < 10; i++) {
-      deck.dispatchEvent(new WheelEvent('wheel', { deltaY: 120, bubbles: true, cancelable: true }));
+      deck.dispatchEvent(new WheelEvent('wheel', { deltaY: -120, bubbles: true, cancelable: true }));
       await new Promise((r) => setTimeout(r, 30));
     }
   });
   await page.waitForTimeout(600);
-  await expect(counter(page)).toHaveText('02 / 10');
+  await expect(counter(page)).toHaveText('09 / 10');
 });
 
 test('pagedown scrolls inside then moves on', async ({ page }) => {

@@ -167,3 +167,58 @@ test.describe('tilt and magnet', () => {
     });
   });
 });
+
+test.describe('blobs and ticker', () => {
+  test('ticker on the profile slide', async ({ page }) => {
+    await page.goto('/');
+    const ticker = page.locator('#slide-1 .ticker');
+    await expect(ticker).toHaveAttribute('aria-hidden', 'true');
+    await expect(ticker).toContainText('6M+ YouTube views');
+    const track = ticker.locator('.ticker__track');
+    expect(await track.evaluate((e) => getComputedStyle(e).animationName)).not.toBe('none');
+    if (page.viewportSize()!.width >= 900) {
+      await ticker.hover();
+      await expect.poll(() => track.evaluate((e) => getComputedStyle(e).animationPlayState)).toBe('paused');
+    }
+  });
+
+  test('blobs sit behind every slide', async ({ page }) => {
+    await page.goto('/');
+    const blobs = page.locator('[data-slide] > .slide__blobs');
+    await expect(blobs).toHaveCount(10);
+    const info = await blobs.evaluateAll((els) =>
+      els.map((e) => ({
+        hidden: e.getAttribute('aria-hidden'),
+        pe: getComputedStyle(e).pointerEvents,
+        third: getComputedStyle(e.children[2]).display,
+        op: Math.max(...[...e.children].map((c) => parseFloat(getComputedStyle(c).opacity))),
+      })),
+    );
+    for (const b of info) {
+      expect(b.hidden).toBe('true');
+      expect(b.pe).toBe('none');
+      expect(b.op).toBeLessThanOrEqual(0.2);
+      if (page.viewportSize()!.width < 640) expect(b.third).toBe('none');
+    }
+  });
+
+  test.describe('reduced motion', () => {
+    test.use({ reducedMotion: 'reduce' });
+    test('ticker and blobs are still', async ({ page }) => {
+      await page.goto('/');
+      expect(await page.locator('#slide-1 .ticker__track').evaluate((e) => getComputedStyle(e).animationName)).toBe('none');
+      const names = await page.locator('.slide__blobs span').evaluateAll((s) => s.map((e) => getComputedStyle(e).animationName));
+      expect(new Set(names)).toEqual(new Set(['none']));
+    });
+  });
+});
+
+test('only the current slide animates its blobs', async ({ page }) => {
+  await page.goto('/');
+  await goSlide(page, 4);
+  const states = await page.locator('[data-slide]').evaluateAll((slides) =>
+    slides.map((s) => getComputedStyle(s.querySelector('.slide__blobs span')!).animationPlayState),
+  );
+  expect(states[3]).toBe('running');
+  expect(states.filter((s, i) => i !== 3 && s === 'running')).toEqual([]);
+});
