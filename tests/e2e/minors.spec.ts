@@ -22,17 +22,21 @@ test.describe('motion', () => {
       const deck = document.querySelector<HTMLElement>('[data-deck]')!;
       deck.scrollTo({ left: 2 * deck.clientWidth, behavior: 'auto' });
     });
-    // the drop-in must actually be running, or this test proves nothing
+    // atomic: while the drop-in is running (or this test proves nothing), move the pointer over
+    // the card and read the result in the same task, so the animation can't finish in between
     await expect
-      .poll(() => card.evaluate((e) => e.getAnimations().some((a) => a instanceof CSSAnimation && a.playState === 'running')), {
-        intervals: [10],
-        timeout: 1500,
-      })
-      .toBe(true);
+      .poll(
+        () =>
+          card.evaluate((e) => {
+            if (!e.getAnimations().some((a) => a instanceof CSSAnimation && a.playState === 'running')) return 'not-running-yet';
+            const r = e.getBoundingClientRect();
+            e.dispatchEvent(new PointerEvent('pointermove', { pointerType: 'mouse', clientX: r.right - 20, clientY: r.top + 20, bubbles: true }));
+            return e.classList.contains('is-tilting') ? 'tilted-during-drop-in' : 'held';
+          }),
+        { intervals: [10], timeout: 1500 },
+      )
+      .toBe('held');
     const box = (await card.boundingBox())!;
-    await page.mouse.move(box.x + 20, box.y + 20);
-    await page.mouse.move(box.x + box.width - 20, box.y + 30, { steps: 2 });
-    await expect(card).not.toHaveClass(/is-tilting/);
     await page.waitForTimeout(1200);
     await page.mouse.move(box.x + box.width - 30, box.y + 40, { steps: 3 });
     await expect(card).toHaveClass(/is-tilting/);
