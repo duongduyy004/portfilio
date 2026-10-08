@@ -13,18 +13,18 @@ describe('ContactCard', () => {
     expect(html).toContain('href="tel:+84838831319"');
   });
 
-  it('renders no LinkedIn link or CV button when missing', async () => {
-    const html = await render(ContactCard, { contact: { ...profile.contact, linkedin: undefined, cv: undefined } });
-    expect(html).not.toContain('linkedin.com');
-    expect(html).not.toContain('Download CV');
-    expect(html).toContain('LinkedIn coming soon');
+  it('has no LinkedIn button', async () => {
+    const html = await render(ContactCard, { contact: profile.contact });
+    expect(html).not.toMatch(/linkedin/i);
   });
 
-  it('renders LinkedIn and CV when supplied', async () => {
-    const html = await render(ContactCard, {
-      contact: { ...profile.contact, linkedin: 'https://www.linkedin.com/in/x', cv: '/cv.pdf' },
-    });
-    expect(html).toContain('href="https://www.linkedin.com/in/x"');
+  it('renders no CV button when missing', async () => {
+    const html = await render(ContactCard, { contact: { ...profile.contact, cv: undefined } });
+    expect(html).not.toContain('Download CV');
+  });
+
+  it('renders the CV button when supplied', async () => {
+    const html = await render(ContactCard, { contact: { ...profile.contact, cv: '/cv.pdf' } });
     expect(html).toContain('Download CV');
   });
 });

@@ -1,6 +1,5 @@
 ---
 import type { Contact } from '../data/types';
-import { linkState } from '../lib/link';
 
 interface Props {
   contact: Contact;
@@ -8,7 +7,6 @@ interface Props {
 
 const { contact } = Astro.props;
 const tel = `+84${contact.phone.replace(/\D/g, '').replace(/^0/, '')}`;
-const linkedin = linkState(contact.linkedin);
 ---
 
 <article class="contact card" data-reveal="drop">
@@ -17,13 +15,6 @@ const linkedin = linkState(contact.linkedin);
   <ul class="contact__links">
     <li><a class="btn btn--primary" href={`mailto:${contact.email}`}>✉️ {contact.email}</a></li>
     <li><a class="btn" href={`tel:${tel}`}>📞 {contact.phone}</a></li>
-    <li>
-      {linkedin.href ? (
-        <a class="btn" href={linkedin.href} target="_blank" rel="noopener">in · LinkedIn ↗</a>
-      ) : (
-        <span class="btn btn--disabled" aria-disabled="true">LinkedIn coming soon</span>
-      )}
-    </li>
     {contact.cv && <li><a class="btn" href={contact.cv} download>📄 Download CV</a></li>}
   </ul>
 </article>
@@ -47,6 +38,4 @@ const linkedin = linkState(contact.linkedin);
     gap: 12px;
   }
   .contact__links .btn { max-width: 100%; overflow-wrap: anywhere; }
-  .btn--disabled { box-shadow: none; color: var(--muted); cursor: default; }
-  .btn--disabled:hover { transform: none; box-shadow: none; }
 </style>

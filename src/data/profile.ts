@@ -287,7 +287,6 @@ export const profile: Profile = {
   contact: {
     email: 'thuyanhphi.work@gmail.com',
     phone: '083-883-1319',
-    linkedin: undefined, // TODO(link)
     cv: undefined, // TODO(cv)
   },
 };

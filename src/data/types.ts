@@ -24,7 +24,7 @@ export interface Video {
 }
 export interface Activity { title: string; role: string; text: string; photo?: Photo }
 export interface Education { school: string; detail: string; years: string }
-export interface Contact { email: string; phone: string; linkedin?: string; cv?: string }
+export interface Contact { email: string; phone: string; cv?: string }
 export interface Profile {
   name: string;
   headline: string;
