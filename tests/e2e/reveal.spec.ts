@@ -5,7 +5,7 @@ const opacityOf = (els: Element[]) => els.map((e) => getComputedStyle(e).opacity
 test('cards drop in when scrolled into view', async ({ page }) => {
   await page.goto('/');
   await expect(page.locator('html')).toHaveClass(/reveal-on/);
-  const card = page.locator('#events li[data-reveal]').first();
+  const card = page.locator('#slide-7 li[data-reveal]').first();
   await expect(card).not.toHaveClass(/is-in/);
   await card.scrollIntoViewIfNeeded();
   await expect(card).toHaveClass(/is-in/);
@@ -15,7 +15,7 @@ test('cards drop in when scrolled into view', async ({ page }) => {
 test('grid items are staggered', async ({ page }) => {
   await page.goto('/');
   const delays = await page
-    .locator('#events li[data-reveal]')
+    .locator('#slide-7 li[data-reveal]')
     .evaluateAll((els) => els.slice(0, 3).map((e) => getComputedStyle(e).getPropertyValue('--i').trim()));
   expect(delays).toEqual(['0', '1', '2']);
 });

@@ -1,24 +1,24 @@
 import { expect, test } from '@playwright/test';
 
-const SECTION_IDS = ['top-posts', 'experience', 'events', 'videos', 'beyond-work', 'contact'];
+const SLIDE_IDS = Array.from({ length: 10 }, (_, i) => `slide-${i + 1}`);
 
-test('sections in order', async ({ page }) => {
+test('slides in order', async ({ page }) => {
   await page.goto('/');
-  const ids = await page.locator('main section').evaluateAll((els) => els.map((e) => e.id));
-  expect(ids).toEqual(SECTION_IDS);
+  const ids = await page.locator('[data-slide]').evaluateAll((els) => els.map((e) => e.id));
+  expect(ids).toEqual(SLIDE_IDS);
 });
 
 test('tab highlight', async ({ page }) => {
   await page.goto('/');
-  const tab = page.locator('nav[aria-label="Sections"] a[href="#events"]');
+  const tab = page.locator('nav[aria-label="Sections"] a[href="#slide-7"]');
   await tab.click();
-  await expect(page.locator('#events')).toBeInViewport();
+  await expect(page.locator('#slide-7')).toBeInViewport();
   await expect(tab).toHaveAttribute('aria-current', 'true');
 });
 
 test('contact tab becomes current at the bottom of the page', async ({ page }) => {
   await page.goto('/');
-  const tab = page.locator('nav[aria-label="Sections"] a[href="#contact"]');
+  const tab = page.locator('nav[aria-label="Sections"] a[href="#slide-10"]');
   await tab.click();
   await expect(tab).toHaveAttribute('aria-current', 'true');
   await expect(page.locator('nav[aria-label="Sections"] [aria-current="true"]')).toHaveCount(1);
@@ -46,7 +46,7 @@ test.describe('without JavaScript', () => {
     await expect(firstStory.locator('p').first()).toBeVisible();
 
     // every video card is a link (to the mp4 or the platform) or a coming-soon card
-    const posters = page.locator('#videos .video__media');
+    const posters = page.locator('#slide-8 .video__media');
     const count = await posters.count();
     for (let i = 0; i < count; i++) {
       const p = posters.nth(i);
@@ -76,7 +76,7 @@ test('card photos keep their crop ratio', async ({ page }) => {
 
 test('post tiles do not repeat the title', async ({ page }) => {
   await page.goto('/');
-  const first = page.locator('#top-posts .post').first();
+  const first = page.locator('#slide-3 .post').first();
   await expect(first.getByText('Whose idea was this?')).toHaveCount(1);
 });
 

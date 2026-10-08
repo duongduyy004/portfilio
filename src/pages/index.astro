@@ -9,7 +9,8 @@ import PostCard from '../components/PostCard.astro';
 import ProfileHeader from '../components/ProfileHeader.astro';
 import Reveal from '../components/Reveal.astro';
 import RoleCard from '../components/RoleCard.astro';
-import Section from '../components/Section.astro';
+import Slide from '../components/Slide.astro';
+import SlideNav from '../components/SlideNav.astro';
 import TabBar from '../components/TabBar.astro';
 import VideoEmbed from '../components/VideoEmbed.astro';
 import VideoModal from '../components/VideoModal.astro';
@@ -22,50 +23,47 @@ import { SECTIONS } from '../data/types';
 const title = `${profile.name} — ${profile.headline}`;
 const description =
   'Employer branding and internal communication portfolio: 6M+ YouTube views, +267% Facebook reach, and the events and content behind them.';
-const icons: Record<(typeof SECTIONS)[number]['id'], string> = {
-  'top-posts': '🔥',
-  experience: '📌',
-  events: '🎉',
-  videos: '🎬',
-  'beyond-work': '🌱',
-  contact: '💌',
-};
-const section = (id: (typeof SECTIONS)[number]['id']) => ({
-  id,
-  title: SECTIONS.find((s) => s.id === id)!.label,
-  icon: icons[id],
-});
+const [profileSlide, careersSlide, postsSlide, ...rest] = SLIDES;
+const roleSlides = rest.slice(0, profile.roles.length);
+const [eventsSlide, videosSlide, beyondSlide, contactSlide] = rest.slice(profile.roles.length);
 ---
 
 <Base title={title} description={description}>
-  <ProfileHeader
-    name={profile.name}
-    headline={profile.headline}
-    bio={profile.bio}
-    skills={profile.skills}
-    avatar={profile.avatar}
-    stats={profile.stats}
-    cvUrl={profile.contact.cv}
-  />
+  <Slide {...profileSlide} hideHeader>
+    <ProfileHeader
+      name={profile.name}
+      headline={profile.headline}
+      bio={profile.bio}
+      skills={profile.skills}
+      avatar={profile.avatar}
+      stats={profile.stats}
+      cvUrl={profile.contact.cv}
+    />
+  </Slide>
   <TabBar sections={SECTIONS} firstSlide={SECTION_FIRST_SLIDE} total={SLIDES.length} />
 
   <main>
-    <Section {...section('top-posts')}>
+    <Slide {...careersSlide}>
       <HighlightCard {...profile.highlight} />
+    </Slide>
+
+    <Slide {...postsSlide}>
       <div class="grid grid--4">
         {profile.posts.map((post, i) => <PostCard post={post} rank={i + 1} />)}
       </div>
-    </Section>
+    </Slide>
 
-    <Section {...section('experience')}>
-      {profile.roles.map((role) => <RoleCard role={role} />)}
-    </Section>
+    {profile.roles.map((role, i) => (
+      <Slide {...roleSlides[i]}>
+        <RoleCard role={role} />
+      </Slide>
+    ))}
 
-    <Section {...section('events')}>
+    <Slide {...eventsSlide}>
       <EventGrid events={profile.events} />
-    </Section>
+    </Slide>
 
-    <Section {...section('videos')}>
+    <Slide {...videosSlide}>
       <div class="grid grid--3">
         {profile.videos.map((video) => <VideoEmbed video={video} />)}
       </div>
@@ -77,20 +75,21 @@ const section = (id: (typeof SECTIONS)[number]['id']) => ({
           </figure>
         ))}
       </div>
-    </Section>
+    </Slide>
 
-    <Section {...section('beyond-work')}>
+    <Slide {...beyondSlide}>
       <div class="grid grid--3">
         {profile.activities.map((activity) => <ActivityCard activity={activity} />)}
         <EducationList items={profile.education} />
       </div>
-    </Section>
+    </Slide>
 
-    <Section {...section('contact')}>
+    <Slide {...contactSlide}>
       <ContactCard contact={profile.contact} />
-    </Section>
+    </Slide>
   </main>
 
+  <SlideNav slides={SLIDES} />
   <Lightbox />
   <VideoModal />
   <Reveal />
@@ -113,4 +112,6 @@ const section = (id: (typeof SECTIONS)[number]['id']) => ({
   .subhead { font-size: 20px; margin: 32px 0 14px; }
   .photo { margin: 0; }
   .photo :global(img) { width: 100%; aspect-ratio: 1; object-fit: cover; }
+  /* ProfileHeader brings its own container; the slide already provides one */
+  :global(#slide-1 .profile) { padding: 0; }
 </style>

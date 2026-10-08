@@ -21,7 +21,7 @@ test('clicking a role photo opens it in the lightbox', async ({ page }) => {
 
 test('highlight screenshot and photography open the lightbox', async ({ page }) => {
   await page.goto('/');
-  for (const sel of ['.highlight [data-lightbox]', '#videos .photo [data-lightbox]', '.profile [data-lightbox]']) {
+  for (const sel of ['.highlight [data-lightbox]', '#slide-8 .photo [data-lightbox]', '.profile [data-lightbox]']) {
     await page.locator(sel).first().click();
     await expect(page.locator('dialog#lightbox')).toHaveAttribute('open', '');
     await page.keyboard.press('Escape');

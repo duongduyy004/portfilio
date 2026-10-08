@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test';
 
 const dancePoster = (page: import('@playwright/test').Page) =>
-  page.locator('#videos a[data-video-modal][href="/video/dance.mp4"]');
+  page.locator('#slide-8 a[data-video-modal][href="/video/dance.mp4"]');
 
 test('no video element exists before a poster is tapped', async ({ page }) => {
   await page.goto('/');
@@ -54,6 +54,6 @@ test.describe('without JavaScript', () => {
   test('posters are plain links to the mp4', async ({ page }) => {
     await page.goto('/');
     await expect(dancePoster(page)).toHaveCount(1);
-    await expect(page.locator('#videos a[href="/video/edits.mp4"]')).toHaveCount(1);
+    await expect(page.locator('#slide-8 a[href="/video/edits.mp4"]')).toHaveCount(1);
   });
 });
