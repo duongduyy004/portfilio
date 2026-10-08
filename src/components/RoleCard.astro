@@ -40,6 +40,32 @@ const { role } = Astro.props;
   </details>
 </article>
 
+<script>
+  // The slide centres its content (margin-block: auto), so an opening story would grow the card
+  // up and down at once. Pin the current top margin before it opens so it only grows downward;
+  // release it on close (and on resize, where the pinned value would be stale).
+  const pinned = new Set<HTMLElement>();
+  for (const story of document.querySelectorAll<HTMLDetailsElement>('.role__story')) {
+    const inner = story.closest<HTMLElement>('.slide__inner');
+    if (!inner) continue;
+    // click runs before the summary's default toggle, so the layout is still the closed one
+    story.querySelector('summary')!.addEventListener('click', () => {
+      if (story.open) return;
+      inner.style.marginTop = getComputedStyle(inner).marginTop;
+      pinned.add(inner);
+    });
+    story.addEventListener('toggle', () => {
+      if (story.open) return;
+      inner.style.marginTop = '';
+      pinned.delete(inner);
+    });
+  }
+  addEventListener('resize', () => {
+    for (const inner of pinned) inner.style.marginTop = '';
+    pinned.clear();
+  });
+</script>
+
 <style>
   .role {
     display: flex;
