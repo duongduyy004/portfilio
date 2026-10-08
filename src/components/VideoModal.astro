@@ -1,0 +1,115 @@
+<dialog id="video-modal" class="video-modal" aria-labelledby="video-modal-title">
+  <button type="button" class="video-modal__close btn" aria-label="Close video" data-close>✕</button>
+  <div class="video-modal__stage"></div>
+  <div class="video-modal__info">
+    <h3 id="video-modal-title" class="video-modal__title"></h3>
+    <p class="video-modal__caption"></p>
+  </div>
+</dialog>
+
+<style>
+  .video-modal {
+    width: fit-content;
+    max-width: calc(100vw - 24px);
+    max-height: calc(100dvh - 24px);
+    padding: 0;
+    border: var(--border);
+    border-radius: var(--radius);
+    background: var(--card);
+    box-shadow: 0 6px 0 var(--ink);
+    overflow: hidden;
+  }
+  .video-modal::backdrop { background: rgb(22 19 31 / .8); }
+  .video-modal__stage {
+    display: grid;
+    place-items: center;
+    background: var(--ink);
+  }
+  .video-modal__stage :global(video) {
+    display: block;
+    max-width: calc(100vw - 28px);
+    max-height: 85dvh;
+    width: auto;
+    height: auto;
+  }
+  /* embedded players have no intrinsic size; give them one per platform */
+  .video-modal__stage :global(iframe) {
+    display: block;
+    border: 0;
+    max-width: calc(100vw - 28px);
+  }
+  .video-modal__stage :global(iframe[data-kind='youtube']) {
+    width: min(960px, calc(100vw - 28px), calc((85dvh) * 16 / 9));
+    aspect-ratio: 16 / 9;
+  }
+  .video-modal__stage :global(iframe[data-kind='tiktok']) {
+    height: min(85dvh, 760px);
+    aspect-ratio: 9 / 16;
+  }
+  .video-modal__info { padding: 12px 56px 14px 16px; display: grid; gap: 2px; }
+  .video-modal__title { font-size: 18px; }
+  .video-modal__caption { font-size: 14px; color: var(--muted); }
+  .video-modal__caption:empty { display: none; }
+  .video-modal__close {
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+    z-index: 1;
+    padding: 6px 12px;
+  }
+</style>
+
+<script>
+  const dialog = document.getElementById('video-modal') as HTMLDialogElement;
+  const stage = dialog.querySelector<HTMLElement>('.video-modal__stage')!;
+  const title = dialog.querySelector<HTMLElement>('.video-modal__title')!;
+  const caption = dialog.querySelector<HTMLElement>('.video-modal__caption')!;
+  let opener: HTMLElement | null = null;
+
+  function player(trigger: HTMLAnchorElement): HTMLElement {
+    const { kind, embed, poster } = trigger.dataset;
+    if (kind === 'file') {
+      const video = document.createElement('video');
+      video.src = trigger.getAttribute('href')!;
+      if (poster) video.poster = poster;
+      video.controls = true;
+      video.autoplay = true;
+      video.playsInline = true;
+      return video;
+    }
+    const iframe = document.createElement('iframe');
+    iframe.src = embed!;
+    iframe.dataset.kind = kind;
+    iframe.title = trigger.dataset.title ?? 'Video';
+    iframe.allow = 'autoplay; encrypted-media; picture-in-picture; fullscreen';
+    iframe.allowFullscreen = true;
+    return iframe;
+  }
+
+  document.addEventListener('click', (event) => {
+    // let ctrl/cmd/shift/middle clicks open the link normally
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    const trigger = (event.target as HTMLElement).closest<HTMLAnchorElement>('a[data-video-modal]');
+    if (!trigger) return;
+    event.preventDefault();
+    opener = trigger;
+    stage.replaceChildren(player(trigger));
+    title.textContent = trigger.dataset.title ?? '';
+    caption.textContent = trigger.dataset.caption ?? '';
+    dialog.showModal();
+  });
+
+  dialog.querySelector('[data-close]')!.addEventListener('click', () => dialog.close());
+
+  // a click on the backdrop lands on the dialog element itself
+  dialog.addEventListener('click', (event) => {
+    if (event.target === dialog) dialog.close();
+  });
+
+  dialog.addEventListener('close', () => {
+    // removing the player stops playback and frees the stream
+    stage.replaceChildren();
+    opener?.focus();
+    opener = null;
+  });
+</script>

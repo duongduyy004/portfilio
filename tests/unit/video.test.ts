@@ -25,13 +25,17 @@ describe('embedUrl', () => {
 });
 
 describe('VideoEmbed', () => {
-  it('file video uses a lazy <video>', async () => {
+  it('file video is a poster link to the mp4 that opens the modal, with no <video> on the server', async () => {
     const html = await render(VideoEmbed, {
-      video: { title: 'Dance', kind: 'file', src: '/video/dance.mp4', poster: '/video/dance.jpg' },
+      video: { title: 'Dance', kind: 'file', src: '/video/dance.mp4', poster: '/video/dance.jpg', caption: 'Moves' },
     });
-    expect(html).toContain('<video');
-    expect(html).toContain('preload="none"');
-    expect(html).toContain('src="/video/dance.mp4"');
+    expect(html).not.toContain('<video');
+    expect(html).toMatch(/<a[^>]*href="\/video\/dance\.mp4"/);
+    expect(html).toMatch(/<a[^>]*data-video-modal/);
+    expect(html).toContain('data-kind="file"');
+    expect(html).toContain('data-caption="Moves"');
+    expect(html).toMatch(/<img[^>]*src="\/video\/dance\.jpg"[^>]*loading="lazy"/);
+    expect(html).toContain('aria-label="Play Dance"');
   });
 
   it('youtube renders a link that the script upgrades, never an iframe on the server', async () => {
@@ -41,6 +45,7 @@ describe('VideoEmbed', () => {
     expect(html).not.toContain('<iframe');
     expect(html).toContain('href="https://youtu.be/abc123"');
     expect(html).toContain('data-embed="https://www.youtube-nocookie.com/embed/abc123?autoplay=1"');
+    expect(html).toMatch(/<a[^>]*data-video-modal/);
   });
 
   it('tiktok without a url says coming soon and renders no link', async () => {

@@ -13,23 +13,30 @@ const link = linkState(video.url);
 const embed = embedUrl(video.kind, link.href ?? undefined);
 const posterSrc = typeof video.poster === 'string' ? video.poster : undefined;
 const posterImage = typeof video.poster === 'string' ? undefined : video.poster;
+// both her own files and parseable YouTube/TikTok links play in the shared VideoModal
+const modalData = {
+  'data-video-modal': '',
+  'data-kind': video.kind,
+  'data-title': video.title,
+  'data-caption': video.caption,
+};
 const platform = { youtube: 'YouTube', tiktok: 'TikTok', link: 'link', file: '' }[video.kind];
 ---
 
 <article class="video card" data-reveal="drop">
   <div class="video__media">
     {video.kind === 'file' ? (
-      <video controls preload="none" playsinline poster={posterSrc} aria-label={video.title}>
-        <source src={video.src} type="video/mp4" />
-      </video>
+      <a class="video__poster" href={video.src} {...modalData} data-poster={posterSrc} aria-label={`Play ${video.title}`}>
+        {posterSrc && <img src={posterSrc} alt="" loading="lazy" decoding="async" />}
+        <span class="video__play" aria-hidden="true">▶</span>
+      </a>
     ) : link.href ? (
       <a
         class="video__poster"
         href={link.href}
         target="_blank"
         rel="noopener"
-        data-embed={embed ?? undefined}
-        data-title={video.title}
+        {...(embed ? { ...modalData, 'data-embed': embed } : {})}
         aria-label={embed ? `Play ${video.title}` : `${video.title}, opens in new tab`}
       >
         {posterImage && <Image src={posterImage.src} alt="" widths={[320, 640]} sizes="(min-width: 960px) 340px, 90vw" />}
@@ -57,9 +64,7 @@ const platform = { youtube: 'YouTube', tiktok: 'TikTok', link: 'link', file: '' 
     background: var(--ink);
     border-bottom: var(--border);
   }
-  .video__media video,
-  .video__media img,
-  .video__media :global(iframe) {
+  .video__media img {
     position: absolute;
     inset: 0;
     width: 100%;
@@ -67,9 +72,11 @@ const platform = { youtube: 'YouTube', tiktok: 'TikTok', link: 'link', file: '' 
     object-fit: cover;
     border: 0;
   }
-  .video__media video { object-fit: contain; }
   .video__poster { display: block; position: absolute; inset: 0; }
+  .video__poster[data-video-modal] { cursor: pointer; }
+  .video__poster[data-video-modal]:hover .video__play { transform: scale(1.08); }
   .video__play {
+    transition: transform .15s;
     position: absolute;
     left: 50%;
     top: 50%;
@@ -101,18 +108,3 @@ const platform = { youtube: 'YouTube', tiktok: 'TikTok', link: 'link', file: '' 
   p { font-size: 14px; color: var(--muted); }
   .video__foot { font-weight: 600; }
 </style>
-
-<script>
-  document.addEventListener('click', (event) => {
-    const poster = (event.target as HTMLElement).closest<HTMLAnchorElement>('a[data-embed]');
-    if (!poster) return;
-    event.preventDefault();
-    const iframe = document.createElement('iframe');
-    iframe.src = poster.dataset.embed!;
-    iframe.title = poster.dataset.title ?? 'Video';
-    iframe.allow = 'autoplay; encrypted-media; picture-in-picture';
-    iframe.allowFullscreen = true;
-    poster.replaceWith(iframe);
-    iframe.focus();
-  });
-</script>

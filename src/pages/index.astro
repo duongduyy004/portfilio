@@ -13,6 +13,7 @@ import RoleCard from '../components/RoleCard.astro';
 import Section from '../components/Section.astro';
 import TabBar from '../components/TabBar.astro';
 import VideoEmbed from '../components/VideoEmbed.astro';
+import VideoModal from '../components/VideoModal.astro';
 import Base from '../layouts/Base.astro';
 import { profile } from '../data/profile';
 import { SECTIONS } from '../data/types';
@@ -90,6 +91,7 @@ const section = (id: (typeof SECTIONS)[number]['id']) => ({
   </main>
 
   <Lightbox />
+  <VideoModal />
   <Reveal />
 </Base>
 

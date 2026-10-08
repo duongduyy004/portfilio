@@ -45,12 +45,12 @@ test.describe('without JavaScript', () => {
     await firstStory.locator('summary').click();
     await expect(firstStory.locator('p').first()).toBeVisible();
 
-    // every non-file video is a link or a coming-soon card
+    // every video card is a link (to the mp4 or the platform) or a coming-soon card
     const posters = page.locator('#videos .video__media');
     const count = await posters.count();
     for (let i = 0; i < count; i++) {
       const p = posters.nth(i);
-      const ok = (await p.locator('video, a[href^="https://"], .video__soon').count()) > 0;
+      const ok = (await p.locator('a[href$=".mp4"], a[href^="https://"], .video__soon').count()) > 0;
       expect(ok).toBe(true);
     }
   });
@@ -98,5 +98,5 @@ test('video click-to-load', async ({ page }) => {
   const youtube = page.locator('a[data-embed*="youtube-nocookie.com"]');
   test.skip((await youtube.count()) === 0, 'no youtube url in profile yet');
   await youtube.first().click();
-  await expect(page.locator('iframe[src*="youtube-nocookie.com"]')).toHaveCount(1);
+  await expect(page.locator('dialog#video-modal iframe[src*="youtube-nocookie.com"]')).toHaveCount(1);
 });
