@@ -92,6 +92,49 @@ a { color: inherit; }
 
 .muted { color: var(--muted); }
 
+/* ---------- modal shell: transparent <dialog>, close button outside the framed box ---------- */
+.modal-shell {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: visible;
+  max-width: calc(100vw - 24px);
+  max-height: calc(100dvh - 24px);
+}
+.modal-shell::backdrop { background: rgb(22 19 31 / .8); }
+.modal-shell[open] {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 10px;
+}
+.modal-shell__close { flex: none; padding: 6px 12px; }
+.modal-shell__frame {
+  width: 100%;
+  background: var(--card);
+  border: var(--border);
+  border-radius: var(--radius);
+  box-shadow: 0 6px 0 var(--ink);
+  overflow: hidden;
+}
+
+/* ---------- scrollbar: purple pill with an ink border on a lavender track ---------- */
+::-webkit-scrollbar { width: 14px; height: 14px; }
+::-webkit-scrollbar-track { background: var(--bg); border-left: 2px solid var(--ink); }
+::-webkit-scrollbar-thumb {
+  background: var(--accent);
+  border: 2px solid var(--ink);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover,
+::-webkit-scrollbar-thumb:active { background: var(--ink); }
+::-webkit-scrollbar-corner { background: var(--bg); }
+/* Firefox has no scrollbar pseudo-elements; colours only. Chromium ignores the
+   pseudo-elements above if scrollbar-color is set, so keep it Firefox-only. */
+@supports not selector(::-webkit-scrollbar) {
+  html { scrollbar-color: var(--accent) var(--bg); }
+}
+
 /* ---------- scroll reveal (only when html.reveal-on; see Base.astro) ---------- */
 [data-reveal] { --i: 0; }
 :is(ul, .grid) > [data-reveal]:nth-child(2) { --i: 1; }
