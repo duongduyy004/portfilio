@@ -35,6 +35,12 @@ const { slides } = Astro.props;
     padding: 0;
     display: flex;
   }
+  :global(html:not(.deck-nav)) .slidenav {
+    position: static;
+    translate: none;
+    width: max-content;
+    margin: 16px auto;
+  }
   /* 24×24 tap target (WCAG 2.5.8) around a 12px dot */
   .slidenav__dot {
     position: relative;
@@ -64,14 +70,23 @@ const { slides } = Astro.props;
     white-space: nowrap;
   }
   @media (min-width: 640px) {
+    .slidenav {
+      left: auto;
+      right: 24px;
+      top: calc(var(--tabbar-h) + (100dvh - var(--tabbar-h)) / 2);
+      bottom: auto;
+      translate: 0 -50%;
+      padding: 6px 2px;
+    }
+    .slidenav ol { flex-direction: column; }
     .slidenav__label {
       width: auto;
       height: auto;
       overflow: visible;
       clip: auto;
-      bottom: calc(100% + 8px);
-      left: 50%;
-      translate: -50% 0;
+      right: calc(100% + 8px);
+      top: 50%;
+      translate: 0 -50%;
       font-size: 13px;
       font-weight: 700;
       color: var(--ink);
@@ -89,7 +104,7 @@ const { slides } = Astro.props;
 </style>
 
 <script>
-  import { counterText, currentSlideX, navKey, wheelStep } from '../lib/slidenav';
+  import { counterText, currentSlideY, navKey, wheelStep } from '../lib/slidenav';
 
   const deck = document.querySelector<HTMLElement>('[data-deck]')!;
   const slides = [...deck.querySelectorAll<HTMLElement>('[data-slide]')];
@@ -108,8 +123,8 @@ const { slides } = Astro.props;
   // navigation is live: its controls replace the deck scrollbar (kept if this script never runs)
   document.documentElement.classList.add('deck-nav');
 
-  const canScrollDown = (s: HTMLElement) => s.scrollTop + s.clientHeight < s.scrollHeight - 1;
-  const canScrollUp = (s: HTMLElement) => s.scrollTop > 0;
+  const canScrollDown = (s: HTMLElement) => !document.documentElement.classList.contains('deck-fit') && s.scrollTop + s.clientHeight < s.scrollHeight - 1;
+  const canScrollUp = (s: HTMLElement) => !document.documentElement.classList.contains('deck-fit') && s.scrollTop > 0;
 
   let current = -1;
   // where an in-flight move is heading, so quick repeated presses step from there, not from `current`
@@ -118,7 +133,7 @@ const { slides } = Astro.props;
 
   function goTo(i: number, focus = true) {
     target = Math.max(0, Math.min(last, i));
-    deck.scrollTo({ left: target * deck.clientWidth, behavior });
+    deck.scrollTo({ top: target * deck.clientHeight, behavior });
     if (focus) slides[target].focus({ preventScroll: true });
   }
 
@@ -150,7 +165,7 @@ const { slides } = Astro.props;
   let hashReady = false;
 
   function update() {
-    const i = currentSlideX(deck.scrollLeft, deck.clientWidth, slides.length);
+    const i = currentSlideY(deck.scrollTop, deck.clientHeight, slides.length);
     if (i === current) return;
     const first = current === -1;
     current = i;
@@ -212,7 +227,7 @@ const { slides } = Astro.props;
 
   // stay on the same slide when the deck changes size (rotation, mobile browser bars)
   window.addEventListener('resize', () => {
-    if (current >= 0) deck.scrollTo({ left: current * deck.clientWidth, behavior: 'auto' });
+    if (current >= 0) deck.scrollTo({ top: current * deck.clientHeight, behavior: 'auto' });
     updateArrows();
     slides.forEach(updateHint);
   });
@@ -243,16 +258,7 @@ const { slides } = Astro.props;
     const active = document.activeElement as HTMLElement | null;
     const action = navKey(e, { tag: active?.tagName ?? 'BODY', dialogOpen: dialogOpen() });
     const slide = slides[current];
-    if (!action) {
-      // ↑/↓ scroll the current slide whenever focus is outside the slides (page, tabs, dots,
-      // arrows) — the document itself never scrolls; inside a slide the browser handles them
-      const outsideSlides = !active || !slides.some((s) => s.contains(active));
-      if (outsideSlides && !dialogOpen() && !e.altKey && !e.ctrlKey && !e.metaKey && (e.key === 'ArrowDown' || e.key === 'ArrowUp')) {
-        e.preventDefault();
-        slide.scrollBy({ top: e.key === 'ArrowDown' ? 40 : -40 });
-      }
-      return;
-    }
+    if (!action) return;
     e.preventDefault();
     if (action === 'next') return goTo(pos() + 1);
     if (action === 'prev') return goTo(pos() - 1);
@@ -276,7 +282,7 @@ const { slides } = Astro.props;
     'wheel',
     (e) => {
       if (dialogOpen() || e.ctrlKey) return;
-      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return; // sideways trackpad: native snap
+      if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return; // ignore horizontal gestures
       const slide = slides[current];
       const dy = e.deltaMode === 1 ? e.deltaY * 16 : e.deltaMode === 2 ? e.deltaY * slide.clientHeight : e.deltaY;
       const down = canScrollDown(slide);
@@ -315,7 +321,7 @@ const { slides } = Astro.props;
     return owner ? slides.indexOf(owner) : -1;
   }
   const initial = slideForHash(location.hash);
-  if (initial >= 0) deck.scrollTo({ left: initial * deck.clientWidth, behavior: 'auto' });
+  if (initial >= 0) deck.scrollTo({ top: initial * deck.clientHeight, behavior: 'auto' });
   update();
   hashReady = true;
 </script>

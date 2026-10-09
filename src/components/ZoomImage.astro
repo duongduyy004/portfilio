@@ -9,11 +9,12 @@ interface Props {
   sizes: string;
   loading?: 'eager' | 'lazy';
   fetchpriority?: 'high' | 'low' | 'auto';
+  quality?: number;
   class?: string;
 }
 
-const { photo, caption, widths, sizes, loading, fetchpriority, class: className } = Astro.props;
-const full = (await getImage({ src: photo.src, width: Math.min(1600, photo.src.width) })).src;
+const { photo, caption, widths, sizes, loading, fetchpriority, quality, class: className } = Astro.props;
+const full = (await getImage({ src: photo.src, width: Math.min(1600, photo.src.width), quality })).src;
 ---
 
 <a
@@ -24,7 +25,7 @@ const full = (await getImage({ src: photo.src, width: Math.min(1600, photo.src.w
   data-alt={photo.alt}
   data-caption={caption ?? photo.alt}
 >
-  <Image src={photo.src} alt={photo.alt} widths={widths} sizes={sizes} loading={loading} fetchpriority={fetchpriority} />
+  <Image src={photo.src} alt={photo.alt} widths={widths} sizes={sizes} quality={quality} loading={loading} fetchpriority={fetchpriority} />
   <span class="zoom__badge" aria-hidden="true">⤢</span>
   <span class="sr-only">Open larger photo</span>
 </a>

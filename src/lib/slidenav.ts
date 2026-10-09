@@ -1,7 +1,7 @@
-/** Index of the slide filling most of a horizontal deck. */
-export function currentSlideX(scrollLeft: number, deckWidth: number, count: number): number {
-  if (deckWidth <= 0) return 0;
-  return Math.max(0, Math.min(count - 1, Math.round(scrollLeft / deckWidth)));
+/** Index of the slide filling most of a vertical deck. */
+export function currentSlideY(scrollTop: number, deckHeight: number, count: number): number {
+  if (deckHeight <= 0) return 0;
+  return Math.max(0, Math.min(count - 1, Math.round(scrollTop / deckHeight)));
 }
 
 /** page-next / page-prev only act at the current slide's bottom / top edge; the caller checks. */
@@ -19,14 +19,14 @@ const NO_KEYS = new Set(['INPUT', 'TEXTAREA', 'SELECT', 'VIDEO', 'IFRAME']);
 // Space toggles summaries and presses buttons, so it stays theirs; arrows still navigate
 const OWNS_SPACE = new Set(['A', 'BUTTON', 'SUMMARY']);
 
-/** Map a key event to a deck action, or null when the browser should handle it (incl. ↑/↓ inside a slide). */
+/** Map a key event to a deck action, or null when the browser should handle it. */
 export function navKey(e: KeyLike, focus: { tag: string; dialogOpen: boolean }): NavAction | null {
   if (e.ctrlKey || e.altKey || e.metaKey || focus.dialogOpen || NO_KEYS.has(focus.tag)) return null;
   if (e.key === ' ') return OWNS_SPACE.has(focus.tag) ? null : e.shiftKey ? 'page-prev' : 'page-next';
   switch (e.key) {
-    case 'ArrowRight':
+    case 'ArrowDown':
       return 'next';
-    case 'ArrowLeft':
+    case 'ArrowUp':
       return 'prev';
     case 'Home':
       return 'first';

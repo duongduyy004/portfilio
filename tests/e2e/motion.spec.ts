@@ -5,7 +5,7 @@ const counter = (page: Page) => page.locator('[data-slide-counter]');
 async function goSlide(page: Page, n: number) {
   await page.evaluate((n) => {
     const deck = document.querySelector<HTMLElement>('[data-deck]')!;
-    deck.scrollTo({ left: (n - 1) * deck.clientWidth, behavior: 'auto' });
+    deck.scrollTo({ top: (n - 1) * deck.clientHeight, behavior: 'auto' });
   }, n);
   await expect(counter(page)).toHaveText(`${String(n).padStart(2, '0')} / 10`);
 }
@@ -235,7 +235,7 @@ test.describe('swipe-linked transitions', () => {
     const scale = await page.evaluate(async () => {
       const deck = document.querySelector<HTMLElement>('[data-deck]')!;
       deck.style.scrollSnapType = 'none';
-      deck.scrollLeft = 1.5 * deck.clientWidth;
+      deck.scrollTop = 1.5 * deck.clientHeight;
       await new Promise((r) => requestAnimationFrame(() => requestAnimationFrame(r)));
       const s = getComputedStyle(document.querySelector('#slide-2 .slide__inner')!).scale;
       return s === 'none' ? 1 : parseFloat(s);

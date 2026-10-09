@@ -8,7 +8,7 @@ const slide = (page: Page, n: number) => page.locator(`#slide-${n}`);
 async function goSlide(page: Page, n: number) {
   await page.evaluate((n) => {
     const deck = document.querySelector<HTMLElement>('[data-deck]')!;
-    deck.scrollTo({ left: (n - 1) * deck.clientWidth, behavior: 'auto' });
+    deck.scrollTo({ top: (n - 1) * deck.clientHeight, behavior: 'auto' });
   }, n);
   await expect(counter(page)).toHaveText(`${String(n).padStart(2, '0')} / 10`);
 }
@@ -20,7 +20,7 @@ test.describe('motion', () => {
     const card = slide(page, 3).locator('[data-tilt]').nth(1);
     await page.evaluate(() => {
       const deck = document.querySelector<HTMLElement>('[data-deck]')!;
-      deck.scrollTo({ left: 2 * deck.clientWidth, behavior: 'auto' });
+      deck.scrollTo({ top: 2 * deck.clientHeight, behavior: 'auto' });
     });
     // atomic: while the drop-in is running (or this test proves nothing), move the pointer over
     // the card and read the result in the same task, so the animation can't finish in between
@@ -132,7 +132,7 @@ test.describe('deck navigation', () => {
 
   test('#12 keyboard focus on a slide is visible', async ({ page }) => {
     await page.goto('/');
-    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('ArrowDown');
     await expect(slide(page, 2)).toBeFocused();
     expect(await slide(page, 2).evaluate((e) => getComputedStyle(e).outlineStyle)).not.toBe('none');
   });
@@ -141,10 +141,11 @@ test.describe('deck navigation', () => {
     test.skip(desktop(page), 'touch only');
     await page.goto('/');
     await slide(page, 1).focus();
+    await page.waitForTimeout(300);
     const client = await page.context().newCDPSession(page);
-    await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 320, y: 400 }] });
+    await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 200, y: 650 }] });
     for (let i = 1; i <= 8; i++) {
-      await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: 320 - 30 * i, y: 400 }] });
+      await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: 200, y: 650 - 60 * i }] });
       await page.waitForTimeout(16);
     }
     await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
@@ -163,12 +164,12 @@ test.describe('deck navigation', () => {
     }
   });
 
-  test('#14 up/down scroll the slide while a tab is focused', async ({ page }) => {
+  test('#14 paging navigates while a tab is focused', async ({ page }) => {
     await page.goto('/');
     await goSlide(page, 8);
     await page.locator('[data-tab-section="videos"]').focus();
-    await page.keyboard.press('ArrowDown');
-    await expect.poll(() => slide(page, 8).evaluate((e) => e.scrollTop)).toBeGreaterThan(0);
+    await page.keyboard.press('PageDown');
+    await expect(counter(page)).toHaveText('09 / 10');
   });
 
   test('#15 the first tab focus ring is not clipped', async ({ page }) => {

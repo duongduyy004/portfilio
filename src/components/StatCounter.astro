@@ -32,15 +32,15 @@ let digitIndex = 0;
 </span>
 
 <style>
-  .stat { display: flex; flex-direction: column; min-width: 0; }
+  .stat { display: flex; flex-direction: column; min-width: 0; container-type: inline-size; text-align: center; gap: 6px; }
   .stat__value {
     font-weight: 700;
     line-height: 1.05;
     font-variant-numeric: tabular-nums;
   }
-  .stat--lg .stat__value { font-size: clamp(26px, 6vw, 34px); }
-  .stat--md .stat__value { font-size: clamp(20px, 4vw, 24px); }
-  .stat__label { font-size: 13px; color: var(--muted); }
+  .stat--lg .stat__value,
+  .stat--md .stat__value { font-size: clamp(19px, 15.2cqw, 66px); }
+  .stat__label { font-size: clamp(13px, 6.4cqw, 19px); color: var(--muted); }
 
   .odo { display: inline-flex; line-height: 1; white-space: nowrap; }
   .odo__col { display: inline-block; height: 1em; overflow: hidden; }

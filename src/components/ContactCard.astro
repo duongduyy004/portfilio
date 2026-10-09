@@ -21,20 +21,23 @@ const tel = `+84${contact.phone.replace(/\D/g, '').replace(/^0/, '')}`;
 
 <style>
   .contact {
-    padding: clamp(22px, 5vw, 40px);
+    padding: clamp(26px, 5vw, 48px);
     background: var(--yellow);
     display: grid;
-    gap: 14px;
+    gap: var(--card-gap);
+    align-content: center;
+    text-align: center;
     margin-bottom: 48px;
   }
   .contact__title { font-size: clamp(28px, 6vw, 44px); }
-  .contact__lead { max-width: 56ch; font-size: 17px; }
+  .contact__lead { max-width: 56ch; margin-inline: auto; font-size: var(--card-body-size); line-height: 1.65; }
   .contact__links {
     list-style: none;
     margin: 6px 0 0;
     padding: 0;
     display: flex;
     flex-wrap: wrap;
+    justify-content: center;
     gap: 12px;
   }
   .contact__links .btn { max-width: 100%; overflow-wrap: anywhere; }

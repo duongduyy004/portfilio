@@ -32,6 +32,29 @@ const headingId = `${id}-heading`;
   <span class="slide__more" aria-hidden="true" hidden><span>↓ more</span></span>
 </section>
 
+<script>
+  const slideElements = [...document.querySelectorAll<HTMLElement>('[data-slide]')];
+  document.documentElement.classList.add('deck-fit');
+  function fitSlide(slide: HTMLElement) {
+    const inner = slide.querySelector<HTMLElement>('.slide__inner');
+    if (!inner) return;
+    const safeBottom = innerWidth < 640 ? 56 : 0;
+    const available = Math.max(1, slide.clientHeight - safeBottom - 32);
+    const scale = Math.min(1, available / Math.max(1, inner.offsetHeight));
+    inner.style.setProperty('--slide-fit', String(scale));
+  }
+  const fitAll = () => slideElements.forEach(fitSlide);
+  const observer = new ResizeObserver(fitAll);
+  slideElements.forEach((slide) => {
+    observer.observe(slide);
+    const inner = slide.querySelector<HTMLElement>('.slide__inner');
+    if (inner) observer.observe(inner);
+  });
+  window.addEventListener('resize', fitAll);
+  document.fonts.ready.then(fitAll);
+  fitAll();
+</script>
+
 <style>
   .slide__head {
     display: flex;

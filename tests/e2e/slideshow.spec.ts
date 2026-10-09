@@ -8,7 +8,7 @@ const scrollTop = (page: Page, n: number) => slide(page, n).evaluate((e) => e.sc
 async function goSlide(page: Page, n: number) {
   await page.evaluate((n) => {
     const deck = document.querySelector<HTMLElement>('[data-deck]')!;
-    deck.scrollTo({ left: (n - 1) * deck.clientWidth, behavior: 'auto' });
+    deck.scrollTo({ top: (n - 1) * deck.clientHeight, behavior: 'auto' });
   }, n);
   await expect(counter(page)).toHaveText(`${String(n).padStart(2, '0')} / 10`);
 }
@@ -25,7 +25,7 @@ test('each slide fills the deck', async ({ page }) => {
   for (let n = 1; n <= 10; n++) {
     await goSlide(page, n);
     const box = (await slide(page, n).boundingBox())!;
-    expect(Math.abs(box.x - deck.x)).toBeLessThanOrEqual(1);
+    expect(Math.abs(box.y - deck.y)).toBeLessThanOrEqual(1);
     expect(Math.abs(box.width - deck.width)).toBeLessThanOrEqual(1);
     expect(Math.abs(box.height - deck.height)).toBeLessThanOrEqual(1);
   }
@@ -39,12 +39,12 @@ test('each slide fills the deck', async ({ page }) => {
 test('keys move slides', async ({ page }) => {
   await page.goto('/');
   const before = await page.evaluate(() => history.length);
-  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowDown');
   await expect(counter(page)).toHaveText('02 / 10');
   await expect.poll(() => page.evaluate(() => location.hash)).toBe('#slide-2');
   await page.keyboard.press('End');
   await expect(counter(page)).toHaveText('10 / 10');
-  await page.keyboard.press('ArrowLeft');
+  await page.keyboard.press('ArrowUp');
   await expect(counter(page)).toHaveText('09 / 10');
   await page.keyboard.press('Home');
   await expect(counter(page)).toHaveText('01 / 10');
@@ -71,38 +71,20 @@ test('arrows move slides', async ({ page }) => {
 });
 
 test.describe('final-review fixes', () => {
-  test('leaving a scrolled slide does not reset it mid-transit', async ({ page }) => {
+  test('leaving a fitted slide preserves its layout when returning', async ({ page }) => {
     await page.goto('/');
     await goSlide(page, 8);
-    await slide(page, 8).evaluate((e) => e.scrollTo({ top: 300 }));
-    await page.waitForTimeout(300);
-    // sample slide 8 every frame while it is still on screen during a smooth move to slide 9
-    const resetWhileVisible = await page.evaluate(
-      () =>
-        new Promise<boolean>((resolve) => {
-          const deck = document.querySelector<HTMLElement>('[data-deck]')!;
-          const s8 = document.querySelector<HTMLElement>('#slide-8')!;
-          let bad = false;
-          const tick = () => {
-            const visible = 8 - deck.scrollLeft / deck.clientWidth; // fraction of slide 8 on screen
-            if (visible > 0.05 && s8.scrollTop < 300) bad = true;
-            if (deck.scrollLeft >= 8 * deck.clientWidth - 1) resolve(bad);
-            else requestAnimationFrame(tick);
-          };
-          document.dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowRight', bubbles: true }));
-          requestAnimationFrame(tick);
-        }),
-    );
-    expect(resetWhileVisible).toBe(false);
+    const before = (await slide(page, 8).locator('.slide__inner').boundingBox())!;
+    await page.keyboard.press('ArrowDown');
     await expect(counter(page)).toHaveText('09 / 10');
-    await expect.poll(() => scrollTop(page, 8)).toBe(0); // reset once settled
+    await goSlide(page, 8);
+    await expect.poll(async () => Math.abs((await slide(page, 8).locator('.slide__inner').boundingBox())!.height - before.height)).toBeLessThanOrEqual(1);
   });
-
 
   test('two quick presses move two slides', async ({ page }) => {
     await page.goto('/');
-    await page.keyboard.press('ArrowRight');
-    await page.keyboard.press('ArrowRight');
+    await page.keyboard.press('ArrowDown');
+    await page.keyboard.press('ArrowDown');
     await expect(counter(page)).toHaveText('03 / 10');
   });
 
@@ -147,70 +129,47 @@ test("wheel at a short slide's edge moves on", async ({ page }) => {
   await expect(counter(page)).toHaveText('09 / 10');
 });
 
-test('wheel inside a tall slide scrolls it', async ({ page }) => {
+test('wheel moves on from a fitted content slide', async ({ page }) => {
   await page.goto('/');
   await goSlide(page, 8);
   await wheelAtCentre(page, 120);
-  await expect.poll(() => scrollTop(page, 8)).toBeGreaterThan(0);
-  await expect(counter(page)).toHaveText('08 / 10');
+  await expect(counter(page)).toHaveText('09 / 10');
 });
 
-
-test('pagedown scrolls inside then moves on', async ({ page }) => {
+test('paging moves directly between fitted slides', async ({ page }) => {
   await page.goto('/');
   await goSlide(page, 8);
   await slide(page, 8).focus();
   await page.keyboard.press('PageDown');
-  await expect.poll(() => scrollTop(page, 8)).toBeGreaterThan(0);
-  await expect(counter(page)).toHaveText('08 / 10');
-  for (let i = 0; i < 15 && (await counter(page).textContent()) === '08 / 10'; i++) {
-    await page.keyboard.press('PageDown');
-    await page.waitForTimeout(300);
-  }
   await expect(counter(page)).toHaveText('09 / 10');
+  await page.keyboard.press('PageUp');
+  await expect(counter(page)).toHaveText('08 / 10');
 });
 
-test("more hint follows the slide's scroll", async ({ page }) => {
+test('fitted slides never show the more-scroll hint', async ({ page }) => {
   await page.goto('/');
-  await goSlide(page, 8);
-  const hint = slide(page, 8).locator('.slide__more > span');
-  await expect(hint).toBeVisible();
-  const heightBefore = await slide(page, 8).evaluate((e) => e.scrollHeight);
-  await slide(page, 8).evaluate((e) => e.scrollTo({ top: e.scrollHeight }));
-  await expect(hint).toBeHidden();
-  // the hint floats; hiding it must not change the slide's height (or yank the scroll position)
-  expect(await slide(page, 8).evaluate((e) => e.scrollHeight)).toBe(heightBefore);
-  await expect(slide(page, 10).locator('.slide__more > span')).toBeHidden(); // contact fits
+  for (let n = 1; n <= 10; n++) {
+    await goSlide(page, n);
+    await expect(slide(page, n).locator('.slide__more')).toBeHidden();
+  }
 });
 
-test('arriving does not reset the current slide mid-read', async ({ page }) => {
-  await page.goto('/');
-  await goSlide(page, 8);
-  await slide(page, 8).evaluate((e) => e.scrollTo({ top: 300 }));
-  await page.waitForTimeout(500);
-  expect(await scrollTop(page, 8)).toBeGreaterThanOrEqual(300);
-  await goSlide(page, 9);
-  await goSlide(page, 8);
-  expect(await scrollTop(page, 8)).toBe(0);
-});
-
-test.describe('settled layout', () => {
-  // measure scroll ranges after cards land, not mid drop-in (tilted cards briefly add overflow)
-  test.use({ reducedMotion: 'reduce' });
-
-  test('expanding a story keeps the slide and position', async ({ page }) => {
+test('reading a full story keeps the fitted slide in place', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
   await goSlide(page, 4);
-  // slide 4 overflows a little on desktop and a lot on phones
-  const target = await slide(page, 4).evaluate((e) => Math.min(200, e.scrollHeight - e.clientHeight));
-  expect(target).toBeGreaterThan(0);
-  await slide(page, 4).evaluate((e, t) => e.scrollTo({ top: t }), target);
-  const box = (await slide(page, 4).locator('summary').boundingBox())!;
-  await page.mouse.click(box.x + 20, box.y + box.height / 2);
-  await page.waitForTimeout(400);
+  const before = (await slide(page, 4).locator('.slide__inner').boundingBox())!;
+  await slide(page, 4).locator('summary').click();
+  const dialog = page.locator('.story-modal[open]');
+  await expect(dialog).toBeVisible();
+  await expect(dialog.locator('p').first()).toBeVisible();
   await expect(counter(page)).toHaveText('04 / 10');
-  expect(await scrollTop(page, 4)).toBeGreaterThanOrEqual(target - 1);
-  });
+  const after = (await slide(page, 4).locator('.slide__inner').boundingBox())!;
+  expect(Math.abs(after.y - before.y)).toBeLessThanOrEqual(1);
+  expect(Math.abs(after.height - before.height)).toBeLessThanOrEqual(1);
+  await page.keyboard.press('Escape');
+  await expect(dialog).toHaveCount(0);
+  await expect(slide(page, 4).locator('summary')).toBeFocused();
 });
 
 test('resizing keeps the current slide', async ({ page }) => {
@@ -222,18 +181,19 @@ test('resizing keeps the current slide', async ({ page }) => {
   await expect(counter(page)).toHaveText('05 / 10');
   const deck = (await page.locator('[data-deck]').boundingBox())!;
   const box = (await slide(page, 5).boundingBox())!;
-  expect(Math.abs(box.x - deck.x)).toBeLessThanOrEqual(1);
+  expect(Math.abs(box.y - deck.y)).toBeLessThanOrEqual(1);
 });
 
 test('swipe moves one slide', async ({ page }) => {
   test.skip(!isMobile(page), 'touch only');
   await page.goto('/');
+  await page.waitForTimeout(300);
   // raw touch events: CDP's synthesizeScrollGesture doesn't drive touch scrolling headless
   const client = await page.context().newCDPSession(page);
-  const y = 400;
-  await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 320, y }] });
+  const y = 650;
+  await client.send('Input.dispatchTouchEvent', { type: 'touchStart', touchPoints: [{ x: 200, y }] });
   for (let i = 1; i <= 8; i++) {
-    await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: 320 - 30 * i, y }] });
+    await client.send('Input.dispatchTouchEvent', { type: 'touchMove', touchPoints: [{ x: 200, y: y - 60 * i }] });
     await page.waitForTimeout(16);
   }
   await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
@@ -259,7 +219,7 @@ test('keys and wheel do nothing while a pop-up is open', async ({ page }) => {
   await goSlide(page, 4);
   await slide(page, 4).locator('[data-lightbox]').first().click();
   await expect(page.locator('dialog#lightbox')).toHaveAttribute('open', '');
-  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowDown');
   await wheelAtCentre(page, 120);
   await page.waitForTimeout(500);
   await expect(counter(page)).toHaveText('04 / 10');
@@ -293,7 +253,7 @@ test.describe('reduced motion', () => {
 test.describe('without JavaScript', () => {
   test.use({ javaScriptEnabled: false });
 
-  test('the deck still works as a sideways strip', async ({ page }) => {
+  test('the deck still works as a vertical stack', async ({ page }) => {
     await page.goto('/');
     await expect(page.locator('[data-slide]')).toHaveCount(10);
     const deck = page.locator('[data-deck]');
@@ -301,7 +261,7 @@ test.describe('without JavaScript', () => {
     const s = (await slide(page, 1).boundingBox())!;
     expect(Math.abs(s.width - d.width)).toBeLessThanOrEqual(1);
     expect(Math.abs(s.height - d.height)).toBeLessThanOrEqual(1);
-    expect(await deck.evaluate((e) => e.scrollWidth > e.clientWidth)).toBe(true);
+    expect(await deck.evaluate((e) => e.scrollHeight > e.clientHeight)).toBe(true);
     await expect(counter(page)).toBeHidden();
     await expect(page.locator('[data-deck-next]')).toBeHidden();
     await expect(page.locator('.slidenav')).toBeVisible();
@@ -330,8 +290,7 @@ test.describe('wheel gesture timing @timing', () => {
   test('trackpad momentum does not scroll the slide you arrive on', async ({ page }) => {
     await page.goto('/');
     await goSlide(page, 7);
-    await slide(page, 7).evaluate((e) => e.scrollTo({ top: e.scrollHeight }));
-    await page.waitForTimeout(300);
+      await page.waitForTimeout(300);
     // trusted wheel input (has a default scroll action), decaying like trackpad momentum
     const client = await page.context().newCDPSession(page);
     const vp = page.viewportSize()!;

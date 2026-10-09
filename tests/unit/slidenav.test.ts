@@ -1,26 +1,26 @@
 import { describe, expect, it } from 'vitest';
-import { counterText, currentSlideX, navKey, wheelStep } from '../../src/lib/slidenav';
+import { counterText, currentSlideY, navKey, wheelStep } from '../../src/lib/slidenav';
 
 const key = (k: string, mods: Partial<{ shiftKey: boolean; ctrlKey: boolean; altKey: boolean; metaKey: boolean }> = {}) => ({
   key: k, shiftKey: false, ctrlKey: false, altKey: false, metaKey: false, ...mods,
 });
 const body = { tag: 'BODY', dialogOpen: false };
 
-describe('currentSlideX', () => {
+describe('currentSlideY', () => {
   it('rounds to the nearest slide and clamps', () => {
-    expect(currentSlideX(0, 400, 10)).toBe(0);
-    expect(currentSlideX(390, 400, 10)).toBe(1);
-    expect(currentSlideX(4100, 400, 10)).toBe(9);
+    expect(currentSlideY(0, 400, 10)).toBe(0);
+    expect(currentSlideY(390, 400, 10)).toBe(1);
+    expect(currentSlideY(4100, 400, 10)).toBe(9);
   });
-  it('handles a zero-width deck', () => {
-    expect(currentSlideX(0, 0, 10)).toBe(0);
+  it('handles a zero-height deck', () => {
+    expect(currentSlideY(0, 0, 10)).toBe(0);
   });
 });
 
 describe('navKey', () => {
-  it('maps horizontal and paging keys', () => {
-    expect(navKey(key('ArrowRight'), body)).toBe('next');
-    expect(navKey(key('ArrowLeft'), body)).toBe('prev');
+  it('maps vertical and paging keys', () => {
+    expect(navKey(key('ArrowDown'), body)).toBe('next');
+    expect(navKey(key('ArrowUp'), body)).toBe('prev');
     expect(navKey(key('Home'), body)).toBe('first');
     expect(navKey(key('End'), body)).toBe('last');
     expect(navKey(key('PageDown'), body)).toBe('page-next');
@@ -28,24 +28,24 @@ describe('navKey', () => {
     expect(navKey(key('PageUp'), body)).toBe('page-prev');
     expect(navKey(key(' ', { shiftKey: true }), body)).toBe('page-prev');
   });
-  it('leaves vertical arrows native', () => {
-    expect(navKey(key('ArrowUp'), body)).toBeNull();
-    expect(navKey(key('ArrowDown'), body)).toBeNull();
+  it('leaves horizontal arrows native', () => {
+    expect(navKey(key('ArrowLeft'), body)).toBeNull();
+    expect(navKey(key('ArrowRight'), body)).toBeNull();
   });
   it('ignores modifiers, dialogs and unrelated keys', () => {
-    for (const m of ['ctrlKey', 'altKey', 'metaKey'] as const) expect(navKey(key('ArrowRight', { [m]: true }), body)).toBeNull();
-    expect(navKey(key('ArrowRight'), { tag: 'BODY', dialogOpen: true })).toBeNull();
+    for (const m of ['ctrlKey', 'altKey', 'metaKey'] as const) expect(navKey(key('ArrowDown', { [m]: true }), body)).toBeNull();
+    expect(navKey(key('ArrowDown'), { tag: 'BODY', dialogOpen: true })).toBeNull();
     expect(navKey(key('a'), body)).toBeNull();
   });
   it('ignores everything in form fields and media', () => {
     for (const tag of ['INPUT', 'TEXTAREA', 'SELECT', 'VIDEO', 'IFRAME']) {
-      expect(navKey(key('ArrowRight'), { tag, dialogOpen: false })).toBeNull();
+      expect(navKey(key('ArrowDown'), { tag, dialogOpen: false })).toBeNull();
     }
   });
   it('leaves Space to links, buttons and summaries but keeps arrows', () => {
     for (const tag of ['A', 'BUTTON', 'SUMMARY']) {
       expect(navKey(key(' '), { tag, dialogOpen: false })).toBeNull();
-      expect(navKey(key('ArrowRight'), { tag, dialogOpen: false })).toBe('next');
+      expect(navKey(key('ArrowDown'), { tag, dialogOpen: false })).toBe('next');
     }
   });
 });

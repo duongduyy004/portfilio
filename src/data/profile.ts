@@ -1,7 +1,7 @@
 import type { Profile } from './types';
 
 import portrait from '../assets/media/portrait.png';
-import morFbInsights from '../assets/media/mor-fb-insights.jpg';
+import morLifetimeInsights from '../assets/media/life-time-insights-mor.png';
 import morContentLibrary from '../assets/media/mor-content-library.jpg';
 import morTripGroup from '../assets/media/mor-trip-group.jpg';
 import morTripStreet from '../assets/media/mor-trip-street.jpg';
@@ -40,14 +40,13 @@ export const profile: Profile = {
   highlight: {
     title: 'MOR Software Careers page',
     stats: [
-      { value: '687,370', label: 'total views' },
-      { value: '+209%', label: 'views growth' },
-      { value: '49,110', label: 'engagements' },
-      { value: '+135%', label: 'engagement growth' },
-      { value: '+50%', label: 'messaging conversations' },
+      { value: '1,087,268', label: 'total views' },
+      { value: '+245%', label: 'views growth' },
+      { value: '84,435', label: 'engagements' },
+      { value: '+189%', label: 'engagement growth' },
     ],
-    text: 'I owned the Facebook content strategy for MOR Software Careers and grew it organically, with no paid promotion. Several separate traffic peaks came from different pieces of content, so the growth was sustainable rather than one viral hit.',
-    image: { src: morFbInsights, alt: 'Facebook Professional dashboard showing 687,370 views and 49,110 engagements' },
+    text: 'Since joining MOR Software, I’ve contributed to growing the Careers page through content about our people and everyday work life. The page recorded over 1 million views (+245%) and 84,435 engagements (+189%). My role covered content planning, copywriting, filming and editing, with colleagues helping bring these stories to life. It’s been rewarding to see more people connect with the culture we share.',
+    image: { src: morLifetimeInsights, alt: 'Facebook Professional dashboard showing 1,087,268 views (+245%) and 84,435 engagements (+189%) for MOR Software Careers' },
   },
 
   posts: [
@@ -226,14 +225,14 @@ export const profile: Profile = {
     {
       title: 'Workplace culture on TikTok',
       kind: 'tiktok',
-      url: undefined, // TODO(link)
+      url: 'https://www.tiktok.com/@congsogenzchill/video/7569250303904648456?is_from_webapp=1&sender_device=pc',
       poster: { src: fmTiktok1, alt: 'TikTok video cover featuring Thuy Anh at the Future Media office' },
       caption: 'Future Media, on screen and behind the idea.',
     },
     {
       title: 'Team culture TikTok',
       kind: 'tiktok',
-      url: undefined, // TODO(link)
+      url: 'https://www.tiktok.com/@congsogenzchill/video/7547702799019117845',
       poster: { src: fmTiktok3, alt: 'TikTok video cover from the Future Media office' },
       caption: 'Future Media employer branding.',
     },

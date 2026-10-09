@@ -13,7 +13,12 @@
   --shadow: 0 4px 0 var(--ink);
   --border: 2px solid var(--ink);
   --gutter: 16px;
-  --max: 1100px;
+  --max: 1720px;
+  --card-body-size: 20px;
+  --card-title-size: clamp(20px, 4vw, 26px);
+  --card-padding: 26px;
+  --card-gap: 20px;
+  --card-desktop-height: clamp(360px, calc(100dvh - 240px), 560px);
   --tabbar-h: 60px;
 
   font-family: 'Space Grotesk', system-ui, sans-serif;
@@ -91,7 +96,7 @@ a { color: inherit; }
 
 .muted { color: var(--muted); }
 
-/* ---------- deck: horizontal full-screen slides (see Deck.astro, Slide.astro, SlideNav.astro) ---------- */
+/* ---------- deck: vertical full-screen slides (see Deck.astro, Slide.astro, SlideNav.astro) ---------- */
 :root {
   --tone-lavender: #F3EFFF;
   --tone-yellow: #FFE45C;
@@ -104,12 +109,13 @@ html.deck-on,
 html.deck-on body { height: 100%; overflow: hidden; }
 .deck {
   display: flex;
+  flex-direction: column;
   margin-top: var(--tabbar-h); /* below the fixed tab bar */
   height: calc(100dvh - var(--tabbar-h));
-  overflow-x: auto;
-  overflow-y: hidden;
-  scroll-snap-type: x mandatory;
-  overscroll-behavior-x: contain;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  overscroll-behavior-y: contain;
 }
 /* the navigation script adds .deck-nav when its controls are live; until then keep the scrollbar */
 .deck-nav .deck { scrollbar-width: none; }
@@ -121,13 +127,40 @@ html.deck-on body { height: 100%; overflow: hidden; }
   display: flex;
   flex-direction: column;
   overflow-y: auto;
-  overscroll-behavior-y: contain;
+  overscroll-behavior-y: auto;
   scroll-snap-align: start;
   scroll-snap-stop: always;
 }
 .slide:focus { outline: none; }
 .slide:focus-visible { outline: 3px solid var(--accent); outline-offset: -6px; }
 .slide__inner { width: 100%; margin-block: auto; padding-block: 32px 72px; }
+.deck-fit .slide { overflow: hidden; scrollbar-width: none; }
+.deck-fit .slide__inner {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin: 0;
+  padding-block: 16px;
+  transform: translate(-50%, -50%) scale(var(--slide-fit, 1));
+  transform-origin: center;
+}
+.deck-fit .slide__more { display: none; }
+.slide::-webkit-scrollbar { display: none; }
+@media (max-width: 639px) {
+  :root { --card-body-size: 14px; --card-title-size: 18px; --card-padding: 14px; --card-gap: 10px; }
+  .deck-fit .slide__inner { top: calc((100% - 56px) / 2); }
+}
+@media (min-width: 640px) and (max-width: 1199px) {
+  .slide__inner { padding-right: 80px; }
+}
+@media (min-width: 1200px) {
+  .slide__inner { width: calc(100% - 80px); padding-inline: 8px; }
+}
+@media (min-width: 900px) {
+  .slide :is(.profile__card, .role, .contact) {
+    min-height: var(--card-desktop-height);
+  }
+}
 .slide__anchor { position: absolute; top: 0; }
 .slide__more {
   /* zero-height sticky anchor: the pill floats above the content, so showing or hiding it
@@ -157,6 +190,8 @@ html.deck-on body { height: 100%; overflow: hidden; }
   html.deck-on, html.deck-on body { height: auto; overflow: visible; }
   .deck { display: block; height: auto; overflow: visible; margin-top: 0; }
   .slide { height: auto; overflow: visible; }
+  .deck-fit .slide { overflow: visible; }
+  .deck-fit .slide__inner { position: static; transform: none; margin-block: 0; }
   .slide + .slide { break-before: page; }
   .slide__more, .deck__arrow, .slidenav, .tabbar { display: none !important; }
 }

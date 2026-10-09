@@ -23,9 +23,9 @@ const { activity } = Astro.props;
 <style>
   .activity { display: flex; flex-direction: column; }
   .activity :global(img) { width: 100%; aspect-ratio: 16 / 10; object-fit: cover; border-bottom: var(--border); }
-  .activity__body { padding: 14px 16px 18px; display: grid; gap: 6px; }
+  .activity__body { padding: var(--card-padding); display: grid; align-content: center; flex: 1; text-align: center; gap: var(--card-gap); }
   .activity__role {
-    justify-self: start;
+    justify-self: center;
     font-size: 12px;
     font-weight: 700;
     background: var(--pink);
@@ -33,6 +33,6 @@ const { activity } = Astro.props;
     border-radius: 999px;
     padding: 1px 10px;
   }
-  h3 { font-size: 18px; }
-  p { font-size: 15px; }
+  h3 { font-size: var(--card-title-size); }
+  p { font-size: var(--card-body-size); line-height: 1.65; }
 </style>

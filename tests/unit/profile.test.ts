@@ -27,7 +27,7 @@ describe('profile content', () => {
   });
 
   it('careers-page highlight matches the deck', () => {
-    expect(profile.highlight.stats.map((s) => s.value)).toEqual(['687,370', '+209%', '49,110', '+135%', '+50%']);
+    expect(profile.highlight.stats.map((s) => s.value)).toEqual(['1,087,268', '+245%', '84,435', '+189%']);
   });
 
   it('#20 post details truncate consistently (never overstate)', () => {

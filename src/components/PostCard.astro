@@ -55,7 +55,7 @@ const linkProps = link.href
     border-bottom: var(--border);
     display: grid;
     place-items: center;
-    padding: 18px;
+    padding: 22px;
   }
   @media (max-width: 639px) {
     .post__media { aspect-ratio: 16 / 9; }
@@ -74,7 +74,7 @@ const linkProps = link.href
   .post__big {
     display: grid;
     justify-items: center;
-    font-size: clamp(40px, 9vw, 52px);
+    font-size: clamp(40px, 9vw, 66px);
     font-weight: 700;
     line-height: 1;
   }
@@ -92,9 +92,9 @@ const linkProps = link.href
   }
   .post__rank { left: 10px; }
   .post__views { right: 10px; background: var(--ink); color: #fff; }
-  .post__body { padding: 14px 16px 16px; display: flex; flex-direction: column; gap: 6px; flex: 1; }
-  .post__title { font-size: 17px; }
-  .post__detail { font-size: 14px; color: var(--muted); }
-  .post__foot { margin-top: auto; padding-top: 6px; font-size: 13px; font-weight: 600; color: var(--muted); }
+  .post__body { padding: var(--card-padding); display: flex; flex-direction: column; justify-content: center; text-align: center; gap: var(--card-gap); flex: 1; }
+  .post__title { font-size: var(--card-title-size); }
+  .post__detail { font-size: var(--card-body-size); line-height: 1.65; color: var(--muted); }
+  .post__foot { margin-top: auto; padding-top: 6px; font-size: 15px; font-weight: 600; color: var(--muted); }
   a.post .post__foot { color: #5638E0; }
 </style>
